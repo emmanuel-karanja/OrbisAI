@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 import base64
 
-st.title("RAG Document Uploader with Summarization")
+st.title("OrbisAI Document Uploader with Summarization")
 
 uploaded_file = st.file_uploader("Choose a file", type=["txt", "md", "pdf"])
 
