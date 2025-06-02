@@ -1,2 +1,10 @@
 chromadb
 requests
+fitz
+markdown
+bs4
+transformers
+langchain_textsplitter
+transformers
+pydantic
+fastapi
