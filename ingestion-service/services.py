@@ -25,35 +25,18 @@ SUMMARY_CHUNK_SIZE = 500
 def initialize_services():
     logger.info("Loading SentenceTransformer model...")
 
-    model = SentenceTransformer("all-MiniLM-L6-v2",local_files_only=True)
+    model = SentenceTransformer("all-MiniLM-L6-v2")
     logger.info("SentenceTransformer loaded.")
 
     logger.info("Loading summarizer pipeline...")
-    summarizer = pipeline(
-    "summarization",
-    model="sshleifer/distilbart-cnn-12-6",
-    tokenizer="sshleifer/distilbart-cnn-12-6",
-    device=-1,  # CPU
-    model_kwargs={"cache_dir": "/root/.cache/huggingface"},
-    local_files_only=True
-     )
+    summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6")
 
     logger.info("Summarizer pipeline loaded.")
 
     logger.info("Loading QA pipeline...")
-    qa_pipeline = pipeline(
-    "question-answering",
-    model="distilbert-base-cased-distilled-squad",
-    tokenizer="distilbert-base-cased-distilled-squad",
-    device=-1,
-    model_kwargs={"cache_dir": "/root/.cache/huggingface"},
-    local_files_only=True
-    )
-
+    qa_pipeline = pipeline("question-answering", model="distilbert-base-cased-distilled-squad")
+   
     logger.info("QA pipeline loaded.")
-    # 'Warm the models
-    summarizer("This is a warm-up example.", max_length=50, min_length=5, do_sample=False)
-    qa_pipeline(question="What is warmup?", context="This is a warm-up example.")
 
     logger.info("Connecting to ChromaDB...")
     client = chromadb.HttpClient(host="chromadb", port=8000)
@@ -211,15 +194,3 @@ def query_docs(request, model, qa_pipeline, collection):
         "summary": summary_text,
         "sources": metadatas
     }
-
-def list_all_documents():
-    try:
-        results = collection.get()
-        doc_names = set()
-        for md in results["metadatas"]:
-            for meta in md:
-                doc_names.add(meta.get("doc_name"))
-        return {"status": "ok", "documents": sorted(doc_names)}
-    except Exception as e:
-        logger.error(f"Error listing documents: {e}")
-        return {"status": "error", "message": str(e)}
