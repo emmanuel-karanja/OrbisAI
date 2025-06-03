@@ -91,3 +91,16 @@ if st.button("Search") and query_text:
         except Exception as e:
             logger.exception(f"Query request failed: {e}")
             st.error(f"❌ Request failed: {e}")
+
+st.title("Embedded Documents")
+
+response = requests.get("http://ingestion:8001/documents")
+if response.status_code == 200:
+    data = response.json()
+    if data["status"] == "ok":
+        for doc in data["documents"]:
+            st.markdown(f"- 📄 {doc}")
+    else:
+        st.error(f"Error: {data['message']}")
+else:
+    st.error("Failed to fetch document list.")

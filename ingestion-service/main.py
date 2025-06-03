@@ -49,3 +49,9 @@ def get_ingest_status(filename: str):
 @app.post("/query")
 def query(request: QueryRequest):
     return query_docs(request, model, qa_pipeline, collection)
+
+
+@app.get("/documents")
+def list_documents():
+    from services import list_all_documents
+    return list_all_documents()

@@ -191,3 +191,15 @@ def query_docs(request, model, qa_pipeline, collection):
         "summary": summary_text,
         "sources": metadatas
     }
+
+def list_all_documents():
+    try:
+        results = collection.get()
+        doc_names = set()
+        for md in results["metadatas"]:
+            for meta in md:
+                doc_names.add(meta.get("doc_name"))
+        return {"status": "ok", "documents": sorted(doc_names)}
+    except Exception as e:
+        logger.error(f"Error listing documents: {e}")
+        return {"status": "error", "message": str(e)}
