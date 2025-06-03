@@ -22,6 +22,9 @@ collection = client.get_or_create_collection("docs")
 summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6")
 qa_pipeline = pipeline("question-answering", model="distilbert-base-cased-distilled-squad")
 
+# Connect to redis (assuming default port 6379 and no password)
+r = redis.Redis(host='redis', port=6379, decode_responses=True)
+
 class IngestRequest(BaseModel):
     filename: str
     content: str  # base64 encoded
@@ -92,9 +95,6 @@ def chunk_text_with_metadata(pages, chunk_size=500, chunk_overlap=100):
 
     logger.info(f"Chunked into {len(chunks)} segments")
     return chunks, metadata
-
-# Connect to redis (assuming default port 6379 and no password)
-r = redis.Redis(host='redis', port=6379, decode_responses=True)
 
 def get_checksum(content_bytes):
     return hashlib.sha256(content_bytes).hexdigest()
