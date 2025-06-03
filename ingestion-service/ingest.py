@@ -14,6 +14,7 @@ app = FastAPI()
 client = chromadb.HttpClient(host="chromadb", port=8000)
 collection = client.get_or_create_collection("docs")
 
+# pipeline("summarization", model="facebook/bart-large-cnn") 
 summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6")
 qa_pipeline = pipeline("question-answering", model="distilbert-base-cased-distilled-squad")
 
