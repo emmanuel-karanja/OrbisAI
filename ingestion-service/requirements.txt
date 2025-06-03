@@ -7,7 +7,7 @@ langchain
 transformers
 pydantic
 fastapi
-torch>=2.6.0+cpu
+torch==2.6.0+cpu
 uvicorn[standard]
 redis
 pdfplumber
