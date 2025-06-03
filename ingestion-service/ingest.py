@@ -30,6 +30,7 @@ collection = client.get_or_create_collection("docs")
 summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6")
 qa_pipeline = pipeline("question-answering", model="distilbert-base-cased-distilled-squad")
 
+# We need this for storing document_name =>checksum storage
 r = redis.Redis(host='redis', port=6379, decode_responses=True)
 
 class IngestRequest(BaseModel):
@@ -111,57 +112,73 @@ def save_document_checksum(filename: str, content_bytes: bytes):
     checksum = hashlib.sha256(content_bytes).hexdigest()
     r.set(f"doc_checksum:{filename}", checksum)
 
+# Ingesting will be done by a background task
 def ingest_document(request: IngestRequest, collection, summarizer, redis_client):
+    doc_key = f"ingestion_status:{request.filename}"
+    redis_client.set(doc_key, "started")
     logger.info(f"Starting ingestion for file: {request.filename}")
-    content_bytes = base64.b64decode(request.content)
 
-    if document_exists_and_handle_update(request.filename, content_bytes):
-        logger.info(f"Document {request.filename} already ingested with same content, skipping ingestion.")
-        return
+    try:
+        content_bytes = base64.b64decode(request.content)
 
-    pages = extract_text_and_metadata(request.filename, request.content)
-    for page in pages:
-        page["doc_name"] = request.filename
+        if document_exists_and_handle_update(request.filename, content_bytes):
+            msg = f"Document {request.filename} already ingested with same content, skipping."
+            logger.info(msg)
+            redis_client.set(doc_key, "skipped")
+            return
 
-    chunks, metadatas = chunk_text_with_metadata(pages)
+        pages = extract_text_and_metadata(request.filename, request.content)
+        for page in pages:
+            page["doc_name"] = request.filename
 
-    logger.info(f"Embedding {len(chunks)} chunks in batches of {BATCH_SIZE}...")
+        chunks, metadatas = chunk_text_with_metadata(pages)
 
-    for i in range(0, len(chunks), BATCH_SIZE):
-        batch_chunks = chunks[i : i + BATCH_SIZE]
-        batch_metadatas = metadatas[i : i + BATCH_SIZE]
-        batch_embeddings = batch_embed_texts(batch_chunks)
+        logger.info(f"Embedding {len(chunks)} chunks in batches of {BATCH_SIZE}...")
 
-        if not batch_embeddings:
-            logger.warning(f"No embeddings returned for batch starting at chunk {i}, skipping batch.")
-            continue
+        for i in range(0, len(chunks), BATCH_SIZE):
+            batch_chunks = chunks[i : i + BATCH_SIZE]
+            batch_metadatas = metadatas[i : i + BATCH_SIZE]
 
-        batch_ids = [f"{request.filename}_chunk_{i + idx}" for idx in range(len(batch_chunks))]
-        collection.add(
-            documents=batch_chunks,
-            embeddings=batch_embeddings,
-            ids=batch_ids,
-            metadatas=batch_metadatas,
-        )
+            batch_embeddings = batch_embed_texts(batch_chunks)
+            if not batch_embeddings:
+                logger.warning(f"No embeddings returned for batch starting at chunk {i}, skipping.")
+                continue
 
-    full_text = "\n\n".join([p["text"] for p in pages])
-    logger.info("Generating hierarchical summary...")
-    summary = hierarchical_summarize(full_text, summarizer)
+            batch_ids = [f"{request.filename}_chunk_{i + idx}" for idx in range(len(batch_chunks))]
+            collection.add(
+                documents=batch_chunks,
+                embeddings=batch_embeddings,
+                ids=batch_ids,
+                metadatas=batch_metadatas,
+            )
 
-    logger.info("Embedding summary...")
-    summary_embedding = batch_embed_texts([summary])
-    if summary_embedding:
-        collection.add(
-            documents=[summary],
-            embeddings=[summary_embedding[0]],
-            ids=[f"{request.filename}_summary"],
-            metadatas=[{"doc_name": request.filename, "page": 0, "paragraph": 0, "summary": True}],
-        )
-    else:
-        logger.warning("No embedding returned for summary, skipping summary storage.")
+        full_text = "\n\n".join([p["text"] for p in pages])
+        logger.info("Generating hierarchical summary...")
 
-    save_document_checksum(request.filename, content_bytes)
-    logger.info(f"Ingestion completed for {request.filename}")
+        summary = hierarchical_summarize(full_text, summarizer)
+
+        logger.info("Embedding summary...")
+        summary_embedding = batch_embed_texts([summary])
+        if summary_embedding:
+            collection.add(
+                documents=[summary],
+                embeddings=[summary_embedding[0]],
+                ids=[f"{request.filename}_summary"],
+                metadatas=[{"doc_name": request.filename, "page": 0, "paragraph": 0, "summary": True}],
+            )
+        else:
+            logger.warning("No embedding returned for summary, skipping summary storage.")
+
+        save_document_checksum(request.filename, content_bytes)
+
+        logger.info(f"Ingestion completed successfully for {request.filename}")
+        redis_client.set(doc_key, "completed")
+
+    except Exception as e:
+        error_msg = f"Ingestion failed for {request.filename}: {e}"
+        logger.error(error_msg)
+        redis_client.set(doc_key, f"failed:{str(e)}")
+
 
 @async_retry()
 async def batch_embed_texts(texts: List[str]) -> List[List[float]]:
@@ -174,6 +191,7 @@ async def batch_embed_texts(texts: List[str]) -> List[List[float]]:
         logger.error(f"Embedding request failed: {e}")
         return []
 
+# Retries with exponential backoff
 def async_retry(retries=3, backoff=1.5, exceptions=(Exception,)):
     def decorator(func):
         @wraps(func)
@@ -196,11 +214,18 @@ def async_retry(retries=3, backoff=1.5, exceptions=(Exception,)):
 def health():
     return {"status": "ok"}
 
+# Due to the possiblity of having very large files, we will make this background task, we do it asynchronously
 @app.post("/ingest")
 async def ingest(request: IngestRequest, background_tasks: BackgroundTasks):
     background_tasks.add_task(ingest_document, request, collection, summarizer, r)
     logger.info(f"Ingestion scheduled for file: {request.filename}")
     return {"status": "accepted", "message": "Document ingestion started in background"}
+
+# We'll add a workflow to check if the ingestion was a success
+@app.get("/ingest/status/{filename}")
+def get_ingestion_status(filename: str):
+    status = r.get(f"ingestion_status:{filename}")
+    return {"filename": filename, "status": status or "not_found"}
 
 @app.post("/query")
 def query_docs(request: QueryRequest):
