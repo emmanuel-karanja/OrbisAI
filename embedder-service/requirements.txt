@@ -1,5 +1,5 @@
 fastapi
 uvicorn[standard]
 sentence-transformers
-torch==2.1.0
+torch==2.1.0+cpu
 
