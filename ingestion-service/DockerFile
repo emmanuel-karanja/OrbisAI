@@ -1,12 +1,13 @@
-FROM python:3.13-alpine
+FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install basic tools: build-base, curl, and ping
-RUN apk add --no-cache \
-    build-base \
+# Install basic tools: build-essential, curl, and ping
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
     curl \
-    iputils
+    iputils-ping \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install everything (CPU-only)
 COPY requirements.txt .
