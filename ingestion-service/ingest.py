@@ -119,14 +119,27 @@ async def ingest(request: IngestRequest):
 
 @app.post("/query")
 def query_docs(request: QueryRequest):
+    # Embed the user's question
     r = requests.post("http://embedder:5000/embed", json={"texts": [request.question]})
     question_embedding = r.json()["embeddings"][0]
 
+    # Query the most relevant chunks
     results = collection.query(query_embeddings=[question_embedding], n_results=3)
     documents = results["documents"][0]
     metadatas = results["metadatas"][0]
-    context = " ".join(documents)
 
+    # Attempt to retrieve a summary document (if any exists)
+    summary_docs = collection.get(where={"summary": True})
+    summary_text = summary_docs["documents"][0] if summary_docs["documents"] else ""
+
+    # Build the full context for answering
+    context_parts = []
+    if summary_text:
+        context_parts.append("Summary:\n" + summary_text)
+    context_parts.append("Details:\n" + "\n".join(documents))
+    context = "\n\n".join(context_parts)
+
+    # Run the QA pipeline on the context
     answer = qa_pipeline(question=request.question, context=context)
 
     return {
@@ -134,8 +147,10 @@ def query_docs(request: QueryRequest):
         "answer": answer["answer"],
         "score": answer["score"],
         "context": documents,
+        "summary": summary_text,
         "sources": metadatas
     }
+
 
 @app.post("/summarize")
 async def summarize(request: SummarizeRequest):
