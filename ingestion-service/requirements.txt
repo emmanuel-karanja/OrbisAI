@@ -1,6 +1,5 @@
 chromadb
 requests
-fitz
 markdown
 bs4
 transformers
@@ -8,7 +7,12 @@ langchain
 transformers
 pydantic
 fastapi
-torch==2.1.0+cpu
+torch>=2.6.0+cpu
 uvicorn[standard]
 redis
+pdfplumber
+numpy<2
+
+
+
 

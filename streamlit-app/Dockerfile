@@ -15,11 +15,9 @@ RUN pip install --no-cache-dir --upgrade pip \
     --extra-index-url https://download.pytorch.org/whl/cpu \
     -r requirements.txt
 
-# Preload the model so it gets baked into the image
-RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
-
 # Copy your app code
 COPY app.py .
+COPY utils /app/utils
 
 # Expose Streamlit default port
 EXPOSE 8501

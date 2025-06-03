@@ -3,7 +3,8 @@ from pydantic import BaseModel
 import requests
 import chromadb
 import base64
-import fitz  # PyMuPDF
+import pdfplumber  # Changed from fitz to pdfplumber
+from io import BytesIO
 import markdown
 from bs4 import BeautifulSoup
 from transformers import pipeline
@@ -45,16 +46,18 @@ def extract_text_and_metadata(filename: str, base64_content: str):
     pages = []
 
     if ext == "pdf":
-        doc = fitz.open(stream=content_bytes, filetype="pdf")
-        for page_num, page in enumerate(doc, start=1):
-            text = page.get_text()
-            paragraphs = [p.strip() for p in text.split('\n\n') if p.strip()]
-            for para_num, para in enumerate(paragraphs, start=1):
-                pages.append({
-                    "page": page_num,
-                    "paragraph": para_num,
-                    "text": para
-                })
+        with pdfplumber.open(BytesIO(content_bytes)) as pdf:
+            for page_num, page in enumerate(pdf.pages, start=1):
+                text = page.extract_text() or ""
+                # Split into paragraphs by two newlines or double line breaks
+                paragraphs = [p.strip() for p in text.split('\n\n') if p.strip()]
+                for para_num, para in enumerate(paragraphs, start=1):
+                    pages.append({
+                        "page": page_num,
+                        "paragraph": para_num,
+                        "text": para
+                    })
+
     elif ext == "md":
         md_text = content_bytes.decode('utf-8', errors='ignore')
         html = markdown.markdown(md_text)
@@ -112,7 +115,7 @@ def delete_docs_by_name(doc_name: str):
         logger.info(f"No existing embeddings found to delete for document '{doc_name}'")
 
 def document_exists_and_handle_update(filename, content_bytes):
-    #We use this for docs with the same name and we want to find out if the incoming(latest version) has brought
+    # We use this for docs with the same name and we want to find out if the incoming(latest version) has brought
     # in any new changes than the old version(already embedded), we use a checksum for that
     checksum = get_checksum(content_bytes)
     # Get the old version from persistent Redis-db
@@ -174,7 +177,7 @@ async def ingest(request: IngestRequest):
         metadatas=[{"doc_name": request.filename, "page": 0, "paragraph": 0, "summary": True}]
     )
 
-   # Persist the doc and its matching checksum
+    # Persist the doc and its matching checksum
     save_document_checksum(request.filename, content_bytes)
 
     logger.info(f"Ingestion completed for {request.filename}")
