@@ -34,6 +34,8 @@ services:
     container_name: embedder
     ports:
       - "5000:5000"
+    environment:
+      - N8N_LOG_WEBHOOK=http://n8n:5678/webhook/log
     command: uvicorn main:app --host 0.0.0.0 --port 5000
     restart: unless-stopped
 
@@ -45,13 +47,19 @@ services:
       - chromadb
     ports:
       - "8001:8001"
+    environment:
+      - N8N_LOG_WEBHOOK=http://n8n:5678/webhook/log
+
     restart: unless-stopped
+    
 
   streamlit:
     build: ./streamlit-app
     container_name: streamlit
     ports:
       - "8501:8501"
+    environment:
+      - N8N_LOG_WEBHOOK=http://n8n:5678/webhook/log
     command: streamlit run app.py --server.port=8501 --server.address=0.0.0.0
     depends_on:
       - n8n
@@ -66,8 +74,15 @@ services:
   #   volumes:
   #     - ollama_data:/root/.ollama
   #   restart: unless-stopped
-
+  redis:
+    image: redis:7
+    command: ["redis-server", "--save", "900", "1", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
 volumes:
   chroma_data:
   n8n_data:
+  redis-data:
   # ollama_data:

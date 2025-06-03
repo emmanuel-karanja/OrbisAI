@@ -8,3 +8,4 @@ langchain_textsplitter
 transformers
 pydantic
 fastapi
+redis
