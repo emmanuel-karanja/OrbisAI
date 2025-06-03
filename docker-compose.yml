@@ -33,7 +33,6 @@ services:
     build: ./ingestion-service
     container_name: ingestion
     depends_on:
-      - embedder
       - chromadb
       - n8n
       - redis
