@@ -10,26 +10,31 @@ from extract import (
     save_document_checksum,
 )
 from redis_client import r
-
 import chromadb
+from fastapi.responses import JSONResponse
 
 logger = setup_logger(name="ingest")
-
-# Initialize outside functions for reuse
-model = SentenceTransformer("all-MiniLM-L6-v2")
-logger.info("SentenceTransformer model loaded locally.")
-
-client = chromadb.HttpClient(host="chromadb", port=8000)
-collection = client.get_or_create_collection("docs")
-
-summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6")
-qa_pipeline = pipeline("question-answering", model="distilbert-base-cased-distilled-squad")
 
 BATCH_SIZE = 50
 SUMMARY_CHUNK_SIZE = 1000
 
 
-def batch_embed_texts(texts: List[str]) -> List[List[float]]:
+def initialize_services():
+    logger.info("Loading SentenceTransformer model...")
+    model = SentenceTransformer("all-MiniLM-L6-v2")
+
+    logger.info("Setting up ChromaDB client...")
+    client = chromadb.HttpClient(host="chromadb", port=8000)
+    collection = client.get_or_create_collection("docs")
+
+    logger.info("Loading transformers pipelines...")
+    summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6")
+    qa_pipeline = pipeline("question-answering", model="distilbert-base-cased-distilled-squad")
+
+    return model, summarizer, qa_pipeline, collection
+
+
+def batch_embed_texts(texts: List[str], model) -> List[List[float]]:
     try:
         return model.encode(texts).tolist()
     except Exception as e:
@@ -62,7 +67,7 @@ def hierarchical_summarize(text: str, summarizer, chunk_size=SUMMARY_CHUNK_SIZE)
     return final_summary
 
 
-def delete_docs_by_name(doc_name: str):
+def delete_docs_by_name(doc_name: str, collection):
     results = collection.get(where={"doc_name": doc_name})
     ids_to_delete = results.get("ids", [])
     if ids_to_delete:
@@ -72,7 +77,7 @@ def delete_docs_by_name(doc_name: str):
         logger.info(f"No existing embeddings found to delete for document '{doc_name}'")
 
 
-def ingest_document(request, collection=collection, summarizer=summarizer, redis_client=r):
+def ingest_document(request, model, summarizer, collection, redis_client=r):
     doc_key = f"ingestion_status:{request.filename}"
     redis_client.set(doc_key, "started")
     logger.info(f"Starting ingestion for file: {request.filename}")
@@ -98,7 +103,7 @@ def ingest_document(request, collection=collection, summarizer=summarizer, redis
             batch_chunks = chunks[i: i + BATCH_SIZE]
             batch_metadatas = metadatas[i: i + BATCH_SIZE]
 
-            batch_embeddings = batch_embed_texts(batch_chunks)
+            batch_embeddings = batch_embed_texts(batch_chunks, model)
             if not batch_embeddings:
                 logger.warning(f"No embeddings returned for batch starting at chunk {i}, skipping.")
                 continue
@@ -117,7 +122,7 @@ def ingest_document(request, collection=collection, summarizer=summarizer, redis
         summary = hierarchical_summarize(full_text, summarizer)
 
         logger.info("Embedding summary...")
-        summary_embedding = batch_embed_texts([summary])
+        summary_embedding = batch_embed_texts([summary], model)
         if summary_embedding:
             collection.add(
                 documents=[summary],
@@ -147,10 +152,10 @@ def ingest_status(filename: str):
     return JSONResponse(status_code=404, content={"status": "not_found", "message": "No status available"})
 
 
-def query_docs(request):
+def query_docs(request, model, qa_pipeline, collection):
     logger.info(f"Received query: {request.question}")
 
-    question_embedding = batch_embed_texts([request.question])[0]
+    question_embedding = batch_embed_texts([request.question], model)[0]
 
     results = collection.query(query_embeddings=[question_embedding], n_results=3)
     documents = results["documents"][0]
