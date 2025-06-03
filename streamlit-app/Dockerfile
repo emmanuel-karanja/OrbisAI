@@ -1,11 +1,12 @@
-FROM python:3.11-slim
+FROM python:3.13-alpine
 
 WORKDIR /app
 
 # Install system dependencies needed by some Python packages
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
- && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache \
+    build-base \
+    curl \
+    iputils
 
 # Copy requirements and install all dependencies with CPU-only PyTorch
 COPY requirements.txt .

@@ -1,9 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, BackgroundTasks
 from pydantic import BaseModel
 import requests
 import chromadb
 import base64
-import pdfplumber  # Changed from fitz to pdfplumber
+import pdfplumber
 from io import BytesIO
 import markdown
 from bs4 import BeautifulSoup
@@ -12,31 +12,36 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from utils.logger import setup_logger
 import redis
 import hashlib
+from typing import List
+import asyncio
+from functools import wraps
+import random
 
 logger = setup_logger("ingestion-service")
 
+BATCH_SIZE = 50
+SUMMARY_CHUNK_SIZE = 1000
+
 app = FastAPI()
 
-# collection is a proxy/connection to the remote db that allows you interact with it like a collection data type
 client = chromadb.HttpClient(host="chromadb", port=8000)
 collection = client.get_or_create_collection("docs")
 
 summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6")
 qa_pipeline = pipeline("question-answering", model="distilbert-base-cased-distilled-squad")
 
-# Connect to redis (assuming default port 6379 and no password)
 r = redis.Redis(host='redis', port=6379, decode_responses=True)
 
 class IngestRequest(BaseModel):
     filename: str
-    content: str  # base64 encoded
+    content: str
 
 class QueryRequest(BaseModel):
     question: str
 
 class SummarizeRequest(BaseModel):
     filename: str
-    content: str  # base64 encoded
+    content: str
 
 def extract_text_and_metadata(filename: str, base64_content: str):
     logger.info(f"Extracting text from file: {filename}")
@@ -49,14 +54,9 @@ def extract_text_and_metadata(filename: str, base64_content: str):
         with pdfplumber.open(BytesIO(content_bytes)) as pdf:
             for page_num, page in enumerate(pdf.pages, start=1):
                 text = page.extract_text() or ""
-                # Split into paragraphs by two newlines or double line breaks
                 paragraphs = [p.strip() for p in text.split('\n\n') if p.strip()]
                 for para_num, para in enumerate(paragraphs, start=1):
-                    pages.append({
-                        "page": page_num,
-                        "paragraph": para_num,
-                        "text": para
-                    })
+                    pages.append({"page": page_num, "paragraph": para_num, "text": para})
 
     elif ext == "md":
         md_text = content_bytes.decode('utf-8', errors='ignore')
@@ -66,11 +66,7 @@ def extract_text_and_metadata(filename: str, base64_content: str):
         for para_num, para in enumerate(paragraphs, start=1):
             text = para.get_text(separator="\n").strip()
             if text:
-                pages.append({
-                    "page": 1,
-                    "paragraph": para_num,
-                    "text": text
-                })
+                pages.append({"page": 1, "paragraph": para_num, "text": text})
     else:
         text = content_bytes.decode('utf-8', errors='ignore')
         pages = [{"page": 1, "paragraph": 1, "text": text}]
@@ -79,10 +75,7 @@ def extract_text_and_metadata(filename: str, base64_content: str):
     return pages
 
 def chunk_text_with_metadata(pages, chunk_size=500, chunk_overlap=100):
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=chunk_size,
-        chunk_overlap=chunk_overlap
-    )
+    splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
     chunks = []
     metadata = []
 
@@ -100,98 +93,120 @@ def chunk_text_with_metadata(pages, chunk_size=500, chunk_overlap=100):
     logger.info(f"Chunked into {len(chunks)} segments")
     return chunks, metadata
 
-def get_checksum(content_bytes):
-    return hashlib.sha256(content_bytes).hexdigest()
-
 def delete_docs_by_name(doc_name: str):
-    # Get all entries that has a matching doc_name in their metadata
     results = collection.get(where={"doc_name": doc_name})
     ids_to_delete = results.get("ids", [])
     if ids_to_delete:
-        # delete those entries
         collection.delete(ids=ids_to_delete)
         logger.info(f"Deleted {len(ids_to_delete)} embeddings for document '{doc_name}'")
     else:
         logger.info(f"No existing embeddings found to delete for document '{doc_name}'")
 
-def document_exists_and_handle_update(filename, content_bytes):
-    # We use this for docs with the same name and we want to find out if the incoming(latest version) has brought
-    # in any new changes than the old version(already embedded), we use a checksum for that
-    checksum = get_checksum(content_bytes)
-    # Get the old version from persistent Redis-db
-    stored_checksum = r.get(filename)
-    if stored_checksum:
-        if stored_checksum == checksum:
-            return True  # Document unchanged, skip ingestion
-        else:
-            # Document updated - delete old embeddings & redis key
-            logger.info(f"Document {filename} changed - deleting old embeddings")
-            delete_docs_by_name(filename)
-            r.delete(filename)
-            return False
-    else:
-        return False
+def document_exists_and_handle_update(filename: str, content_bytes: bytes) -> bool:
+    checksum = hashlib.sha256(content_bytes).hexdigest()
+    saved_checksum = r.get(f"doc_checksum:{filename}")
+    return saved_checksum and saved_checksum == checksum
 
-def save_document_checksum(filename, content_bytes):
-    checksum = get_checksum(content_bytes)
-    r.set(filename, checksum)
-    
+def save_document_checksum(filename: str, content_bytes: bytes):
+    checksum = hashlib.sha256(content_bytes).hexdigest()
+    r.set(f"doc_checksum:{filename}", checksum)
+
+def ingest_document(request: IngestRequest, collection, summarizer, redis_client):
+    logger.info(f"Starting ingestion for file: {request.filename}")
+    content_bytes = base64.b64decode(request.content)
+
+    if document_exists_and_handle_update(request.filename, content_bytes):
+        logger.info(f"Document {request.filename} already ingested with same content, skipping ingestion.")
+        return
+
+    pages = extract_text_and_metadata(request.filename, request.content)
+    for page in pages:
+        page["doc_name"] = request.filename
+
+    chunks, metadatas = chunk_text_with_metadata(pages)
+
+    logger.info(f"Embedding {len(chunks)} chunks in batches of {BATCH_SIZE}...")
+
+    for i in range(0, len(chunks), BATCH_SIZE):
+        batch_chunks = chunks[i : i + BATCH_SIZE]
+        batch_metadatas = metadatas[i : i + BATCH_SIZE]
+        batch_embeddings = batch_embed_texts(batch_chunks)
+
+        if not batch_embeddings:
+            logger.warning(f"No embeddings returned for batch starting at chunk {i}, skipping batch.")
+            continue
+
+        batch_ids = [f"{request.filename}_chunk_{i + idx}" for idx in range(len(batch_chunks))]
+        collection.add(
+            documents=batch_chunks,
+            embeddings=batch_embeddings,
+            ids=batch_ids,
+            metadatas=batch_metadatas,
+        )
+
+    full_text = "\n\n".join([p["text"] for p in pages])
+    logger.info("Generating hierarchical summary...")
+    summary = hierarchical_summarize(full_text, summarizer)
+
+    logger.info("Embedding summary...")
+    summary_embedding = batch_embed_texts([summary])
+    if summary_embedding:
+        collection.add(
+            documents=[summary],
+            embeddings=[summary_embedding[0]],
+            ids=[f"{request.filename}_summary"],
+            metadatas=[{"doc_name": request.filename, "page": 0, "paragraph": 0, "summary": True}],
+        )
+    else:
+        logger.warning("No embedding returned for summary, skipping summary storage.")
+
+    save_document_checksum(request.filename, content_bytes)
+    logger.info(f"Ingestion completed for {request.filename}")
+
+@async_retry()
+async def batch_embed_texts(texts: List[str]) -> List[List[float]]:
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post("http://embedder:5000/embed", json={"texts": texts})
+            response.raise_for_status()
+            return response.json()["embeddings"]
+    except Exception as e:
+        logger.error(f"Embedding request failed: {e}")
+        return []
+
+def async_retry(retries=3, backoff=1.5, exceptions=(Exception,)):
+    def decorator(func):
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            delay = 1
+            for attempt in range(retries):
+                try:
+                    return await func(*args, **kwargs)
+                except exceptions as e:
+                    if attempt == retries - 1:
+                        raise
+                    logger.warning(f"{func.__name__} failed (attempt {attempt+1}), retrying in {delay:.1f}s: {e}")
+                    await asyncio.sleep(delay)
+                    delay *= backoff + random.uniform(0, 0.5)
+        return wrapper
+    return decorator
+
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
 
 @app.post("/ingest")
-async def ingest(request: IngestRequest):
-    logger.info(f"Starting ingestion for file: {request.filename}")
-
-    # We encode to base64 to allow text, images etc to be treated uniformly.
-    content_bytes = base64.b64decode(request.content)
-
-    if document_exists_and_handle_update(request.filename, content_bytes):
-        logger.info(f"Document {request.filename} already ingested with same content, skipping.")
-        return {"status": "ok", "summary": "Document already ingested with same content."}
-
-    pages = extract_text_and_metadata(request.filename, request.content)
-    for page_info in pages:
-        page_info["doc_name"] = request.filename
-
-    chunks, metadatas = chunk_text_with_metadata(pages)
-    full_text = "\n\n".join([p["text"] for p in pages])
-
-    logger.info("Generating summary...")
-    summary = summarizer(full_text, max_length=100, min_length=30, do_sample=False)[0]['summary_text']
-
-    logger.info("Embedding document chunks...")
-    embeddings = []
-    for chunk in chunks:
-        r = requests.post("http://embedder:5000/embed", json={"texts": [chunk]})
-        embedding = r.json()["embeddings"][0]
-        embeddings.append(embedding)
-
-    ids = [f"{request.filename}_chunk{i}" for i in range(len(chunks))]
-    collection.add(documents=chunks, embeddings=embeddings, ids=ids, metadatas=metadatas)
-
-    logger.info("Embedding summary...")
-    r = requests.post("http://embedder:5000/embed", json={"texts": [summary]})
-    summary_embedding = r.json()["embeddings"][0]
-    collection.add(
-        documents=[summary],
-        embeddings=[summary_embedding],
-        ids=[f"{request.filename}_summary"],
-        metadatas=[{"doc_name": request.filename, "page": 0, "paragraph": 0, "summary": True}]
-    )
-
-    # Persist the doc and its matching checksum
-    save_document_checksum(request.filename, content_bytes)
-
-    logger.info(f"Ingestion completed for {request.filename}")
-    return {"status": "ok", "summary": summary}
+async def ingest(request: IngestRequest, background_tasks: BackgroundTasks):
+    background_tasks.add_task(ingest_document, request, collection, summarizer, r)
+    logger.info(f"Ingestion scheduled for file: {request.filename}")
+    return {"status": "accepted", "message": "Document ingestion started in background"}
 
 @app.post("/query")
 def query_docs(request: QueryRequest):
     logger.info(f"Received query: {request.question}")
-    r = requests.post("http://embedder:5000/embed", json={"texts": [request.question]})
-    question_embedding = r.json()["embeddings"][0]
+    embedding_response = requests.post("http://embedder:5000/embed", json={"texts": [request.question]})
+    question_embedding = embedding_response.json()["embeddings"][0]
 
     results = collection.query(query_embeddings=[question_embedding], n_results=3)
     documents = results["documents"][0]
@@ -207,7 +222,6 @@ def query_docs(request: QueryRequest):
     context = "\n\n".join(context_parts)
 
     logger.info("Running QA pipeline...")
-    # Hit the Generator LLM
     answer = qa_pipeline(question=request.question, context=context)
 
     logger.info("Query processed successfully")
@@ -220,13 +234,30 @@ def query_docs(request: QueryRequest):
         "sources": metadatas
     }
 
-@app.post("/summarize")
-async def summarize(request: SummarizeRequest):
-    logger.info(f"Summarizing file: {request.filename}")
-    pages = extract_text_and_metadata(request.filename, request.content)
-    full_text = "\n\n".join([p["text"] for p in pages])
+def hierarchical_summarize(text: str, summarizer, chunk_size=SUMMARY_CHUNK_SIZE) -> str:
+    """
+    Summarize long text by chunking it, summarizing each chunk,
+    then summarizing the combined summaries.
+    """
+    chunks = [text[i : i + chunk_size] for i in range(0, len(text), chunk_size)]
+    logger.info(f"Summarizing in {len(chunks)} chunks")
 
-    summary = summarizer(full_text, max_length=150, min_length=40, do_sample=False)[0]['summary_text']
+    summaries = []
+    for i, chunk in enumerate(chunks):
+        try:
+            summary = summarizer(chunk, max_length=100, min_length=30, do_sample=False)[0]['summary_text']
+        except Exception as e:
+            logger.error(f"Error summarizing chunk {i}: {e}")
+            summary = ""
+        summaries.append(summary)
 
-    logger.info("Summary generated")
-    return {"filename": request.filename, "summary": summary}
+    combined_summary_text = " ".join(summaries)
+    logger.info("Summarizing combined summaries")
+
+    try:
+        final_summary = summarizer(combined_summary_text, max_length=100, min_length=30, do_sample=False)[0]['summary_text']
+    except Exception as e:
+        logger.error(f"Error summarizing combined text: {e}")
+        final_summary = combined_summary_text  # fallback
+
+    return final_summary
