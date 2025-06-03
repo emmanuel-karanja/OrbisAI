@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 import base64
+import time
 from utils.logger import setup_logger
 
 logger = setup_logger("streamlit-ui")
@@ -26,9 +27,26 @@ if uploaded_file:
             )
             if response.status_code == 200:
                 result = response.json()
-                logger.info(f"Ingestion successful for {uploaded_file.name}")
-                st.success("✅ Document successfully embedded and stored.")
-                st.markdown(f"### ✨ Summary:\n{result.get('summary', '')}")
+                logger.info(f"Ingestion started for {uploaded_file.name}")
+
+                # Optionally wait briefly to allow background ingestion to begin
+                time.sleep(2)
+
+                # Fetch the ingestion status
+                status_res = requests.get(
+                    f"http://ingestion:8001/ingest-status/{uploaded_file.name}",
+                    timeout=10
+                )
+
+                if status_res.status_code == 200:
+                    msg = status_res.json().get("message", "Ingestion complete.")
+                    logger.info(f"Ingest status: {msg}")
+                    st.success(f"✅ {msg}")
+                else:
+                    st.warning("⚠️ Ingestion status not available yet.")
+
+                if "summary" in result:
+                    st.markdown(f"### ✨ Summary:\n{result.get('summary', '')}")
             else:
                 logger.error(f"Ingestion failed for {uploaded_file.name}: {response.text}")
                 st.error(f"❌ Failed: {response.text}")
@@ -57,11 +75,11 @@ if st.button("Search") and query_text:
                 metadata = results.get("metadata", []) or results.get("sources", [])
 
                 if chunks:
-                    st.success("Found relevant content:")
+                    st.success("✅ Found relevant content:")
                     logger.info(f"{len(chunks)} matches returned for query.")
                     for i, chunk in enumerate(chunks):
                         meta = metadata[i] if i < len(metadata) else {}
-                        st.markdown(f"**📄 Page {meta.get('page')} | Paragraph {meta.get('paragraph')}**")
+                        st.markdown(f"**📄 Page {meta.get('page', '?')} | Paragraph {meta.get('paragraph', '?')}**")
                         st.write(chunk)
                         st.markdown("---")
                 else:
@@ -69,7 +87,7 @@ if st.button("Search") and query_text:
                     st.warning("No relevant content found.")
             else:
                 logger.error(f"Query failed: {qres.text}")
-                st.error(f"Query failed: {qres.text}")
+                st.error(f"❌ Query failed: {qres.text}")
         except Exception as e:
             logger.exception(f"Query request failed: {e}")
             st.error(f"❌ Request failed: {e}")

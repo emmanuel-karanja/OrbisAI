@@ -16,6 +16,7 @@ from typing import List
 import asyncio
 from functools import wraps
 import random
+from fastapi.responses import JSONResponse
 
 logger = setup_logger("ingestion-service")
 
@@ -222,10 +223,13 @@ async def ingest(request: IngestRequest, background_tasks: BackgroundTasks):
     return {"status": "accepted", "message": "Document ingestion started in background"}
 
 # We'll add a workflow to check if the ingestion was a success
-@app.get("/ingest/status/{filename}")
-def get_ingestion_status(filename: str):
-    status = r.get(f"ingestion_status:{filename}")
-    return {"filename": filename, "status": status or "not_found"}
+@app.get("/ingest-status/{filename}")
+def ingest_status(filename: str):
+    doc_key = f"ingest_status:{filename}"
+    status_msg = r.get(doc_key)
+    if status_msg:
+        return {"status": "ok", "message": status_msg}
+    return JSONResponse(status_code=404, content={"status": "not_found", "message": "No status available"})
 
 @app.post("/query")
 def query_docs(request: QueryRequest):
