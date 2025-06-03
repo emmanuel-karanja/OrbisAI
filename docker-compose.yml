@@ -23,6 +23,7 @@ services:
       - N8N_HOST=localhost
       - N8N_PORT=5678
       - NODE_ENV=production
+      - N8N_RUNNERS_ENABLED=true
     volumes:
       - n8n_data:/home/node/.n8n
     depends_on:

@@ -16,25 +16,22 @@ from fastapi.responses import JSONResponse
 logger = setup_logger(name="ingest")
 
 BATCH_SIZE = 50
-SUMMARY_CHUNK_SIZE = 1000
+SUMMARY_CHUNK_SIZE = 500
 
 
 def initialize_services():
     logger.info("Loading SentenceTransformer model...")
-    model = SentenceTransformer("paraphrase-MiniLM-L3-v2")
 
-    # model = SentenceTransformer("all-MiniLM-L6-v2")
+    model = SentenceTransformer("all-MiniLM-L6-v2")
     logger.info("SentenceTransformer loaded.")
 
     logger.info("Loading summarizer pipeline...")
-    # summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6")
-    summarizer = pipeline("summarization", model="t5-small")
+    summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6")
 
     logger.info("Summarizer pipeline loaded.")
 
     logger.info("Loading QA pipeline...")
-    # qa_pipeline = pipeline("question-answering", model="distilbert-base-cased-distilled-squad")
-    qa_pipeline = pipeline("question-answering", model="deepset/roberta-base-squad2")
+    qa_pipeline = pipeline("question-answering", model="distilbert-base-cased-distilled-squad")
 
     logger.info("QA pipeline loaded.")
 
