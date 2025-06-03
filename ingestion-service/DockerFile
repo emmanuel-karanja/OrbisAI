@@ -2,7 +2,7 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install basic tools: build-essential, curl, and ping
+# Install basic tools: build-essential, curl, ping
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
@@ -17,9 +17,11 @@ RUN pip install --no-cache-dir --upgrade pip \
     --extra-index-url https://download.pytorch.org/whl/cpu \
     -r requirements.txt
 
-# Copy your app
-COPY ingest.py .
-COPY utils /app/utils
+# Copy your entire app folder (assuming main.py, models.py, services.py, utils/)
+COPY main.py .
+COPY models.py .
+COPY services.py .
+COPY logger.py .
 
-# Run it
-CMD ["uvicorn", "ingest:app", "--host", "0.0.0.0", "--port", "8001"]
+# Run the FastAPI app with uvicorn
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001"]
