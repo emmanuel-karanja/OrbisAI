@@ -55,6 +55,7 @@ services:
     command: streamlit run app.py --server.port=8501 --server.address=0.0.0.0
     depends_on:
       - n8n
+      - redis
       - chromadb
       - ingestion
     restart: unless-stopped
@@ -71,7 +72,7 @@ services:
     image: redis:7
     command: ["redis-server", "--save", "900", "1", "--appendonly", "yes"]
     ports:
-      - "6380:6379"
+      - "6379:6379"
     volumes:
       - redis-data:/data
 volumes:
