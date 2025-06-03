@@ -21,15 +21,21 @@ SUMMARY_CHUNK_SIZE = 1000
 
 def initialize_services():
     logger.info("Loading SentenceTransformer model...")
-    model = SentenceTransformer("all-MiniLM-L6-v2")
+    model = SentenceTransformer("paraphrase-MiniLM-L3-v2")
+
+    # model = SentenceTransformer("all-MiniLM-L6-v2")
     logger.info("SentenceTransformer loaded.")
 
     logger.info("Loading summarizer pipeline...")
-    summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6")
+    # summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6")
+    summarizer = pipeline("summarization", model="t5-small")
+
     logger.info("Summarizer pipeline loaded.")
 
     logger.info("Loading QA pipeline...")
-    qa_pipeline = pipeline("question-answering", model="distilbert-base-cased-distilled-squad")
+    # qa_pipeline = pipeline("question-answering", model="distilbert-base-cased-distilled-squad")
+    qa_pipeline = pipeline("question-answering", model="deepset/roberta-base-squad2")
+
     logger.info("QA pipeline loaded.")
 
     logger.info("Connecting to ChromaDB...")
