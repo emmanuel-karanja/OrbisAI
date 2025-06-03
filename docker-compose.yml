@@ -44,6 +44,8 @@ services:
       - N8N_LOG_WEBHOOK=http://n8n:5678/webhook/log
     command: uvicorn main:app --host 0.0.0.0 --port 8001 --log-level info --reload
     restart: unless-stopped
+    volumes:
+      - ~/.cache/huggingface:/root/.cache/huggingface
     
 
   streamlit:
@@ -82,4 +84,5 @@ volumes:
   chroma_data:
   n8n_data:
   redis-data:
+  
   # ollama_data:

@@ -13,6 +13,9 @@ from redis_client import r
 import chromadb
 from fastapi.responses import JSONResponse
 
+import torch
+torch.set_num_threads(1)
+
 logger = setup_logger(name="ingest")
 
 BATCH_SIZE = 50
@@ -22,18 +25,35 @@ SUMMARY_CHUNK_SIZE = 500
 def initialize_services():
     logger.info("Loading SentenceTransformer model...")
 
-    model = SentenceTransformer("all-MiniLM-L6-v2")
+    model = SentenceTransformer("all-MiniLM-L6-v2",local_files_only=True)
     logger.info("SentenceTransformer loaded.")
 
     logger.info("Loading summarizer pipeline...")
-    summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6")
+    summarizer = pipeline(
+    "summarization",
+    model="sshleifer/distilbart-cnn-12-6",
+    tokenizer="sshleifer/distilbart-cnn-12-6",
+    device=-1,  # CPU
+    model_kwargs={"cache_dir": "/root/.cache/huggingface"},
+    local_files_only=True
+     )
 
     logger.info("Summarizer pipeline loaded.")
 
     logger.info("Loading QA pipeline...")
-    qa_pipeline = pipeline("question-answering", model="distilbert-base-cased-distilled-squad")
+    qa_pipeline = pipeline(
+    "question-answering",
+    model="distilbert-base-cased-distilled-squad",
+    tokenizer="distilbert-base-cased-distilled-squad",
+    device=-1,
+    model_kwargs={"cache_dir": "/root/.cache/huggingface"},
+    local_files_only=True
+    )
 
     logger.info("QA pipeline loaded.")
+    # 'Warm the models
+    summarizer("This is a warm-up example.", max_length=50, min_length=5, do_sample=False)
+    qa_pipeline(question="What is warmup?", context="This is a warm-up example.")
 
     logger.info("Connecting to ChromaDB...")
     client = chromadb.HttpClient(host="chromadb", port=8000)
