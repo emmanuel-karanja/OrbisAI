@@ -14,16 +14,20 @@ app = FastAPI()
 client = chromadb.HttpClient(host="chromadb", port=8000)
 collection = client.get_or_create_collection("docs")
 
-# pipeline("summarization", model="facebook/bart-large-cnn") 
+# Summarization and QA pipelines
 summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6")
 qa_pipeline = pipeline("question-answering", model="distilbert-base-cased-distilled-squad")
 
 class IngestRequest(BaseModel):
     filename: str
-    content: str
+    content: str  # base64 encoded
 
 class QueryRequest(BaseModel):
     question: str
+
+class SummarizeRequest(BaseModel):
+    filename: str
+    content: str  # base64 encoded
 
 def extract_text_and_metadata(filename: str, base64_content: str):
     content_bytes = base64.b64decode(base64_content)
@@ -132,3 +136,12 @@ def query_docs(request: QueryRequest):
         "context": documents,
         "sources": metadatas
     }
+
+@app.post("/summarize")
+async def summarize(request: SummarizeRequest):
+    pages = extract_text_and_metadata(request.filename, request.content)
+    full_text = "\n\n".join([p["text"] for p in pages])
+
+    summary = summarizer(full_text, max_length=150, min_length=40, do_sample=False)[0]['summary_text']
+
+    return {"filename": request.filename, "summary": summary}

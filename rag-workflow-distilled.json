@@ -1,0 +1,81 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "path": "rag",
+        "options": {}
+      },
+      "id": "Webhook Entry",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://chromadb:8000/api/v1/query",
+        "method": "POST",
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": "{\n  \"collection_name\": \"docs\",\n  \"query_texts\": [\"{{$json[\"query\"]}}\"],\n  \"n_results\": 3\n}"
+      },
+      "id": "Query Chroma",
+      "name": "Query Chroma",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "const docs = $json['documents'][0] || [];\nconst prompt = `You are a helpful assistant. Use the following context to answer the question.\n\nContext:\n${docs.join(\"\\n\")}\n\nQuestion: ${$json.query}`;\nreturn [{ prompt }];"
+      },
+      "id": "Build Prompt",
+      "name": "Build Prompt",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [750, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://ingestion:8001/query",
+        "method": "POST",
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": "{ \"prompt\": \"{{$json[\"prompt\"]}}\" }"
+      },
+      "id": "Call Summarizer",
+      "name": "Call Summarizer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [1000, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "return [{ json: { answer: $json.generated_text || $json.text || $json.answer } }];"
+      },
+      "id": "Extract Answer",
+      "name": "Extract Answer",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1250, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{ "node": "Query Chroma", "type": "main", "index": 0 }]]
+    },
+    "Query Chroma": {
+      "main": [[{ "node": "Build Prompt", "type": "main", "index": 0 }]]
+    },
+    "Build Prompt": {
+      "main": [[{ "node": "Call Summarizer", "type": "main", "index": 0 }]]
+    },
+    "Call Summarizer": {
+      "main": [[{ "node": "Extract Answer", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": true,
+  "settings": {},
+  "name": "RAG Workflow with Ingestion Query Endpoint",
+  "version": 2
+}
