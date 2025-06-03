@@ -2,9 +2,9 @@ import streamlit as st
 import requests
 import base64
 import time
-from utils.logger import setup_logger
+from logger import setup_logger
 
-logger = setup_logger("streamlit-ui")
+logger = setup_logger(name="ingest", level=logging.INFO, log_to_file=True)
 
 st.set_page_config(page_title="OrbisAI RAG System", layout="centered")
 st.title("📄 OrbisAI Document Uploader + Query Interface")

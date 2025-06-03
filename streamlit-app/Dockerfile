@@ -19,7 +19,7 @@ RUN pip install --no-cache-dir --upgrade pip \
 
 # Copy your app code
 COPY app.py .
-COPY utils /app/utils
+COPY logger.py .
 
 # Expose Streamlit default port
 EXPOSE 8501

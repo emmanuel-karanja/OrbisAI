@@ -41,7 +41,7 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - N8N_LOG_WEBHOOK=http://n8n:5678/webhook/log
-    command: uvicorn ingest:app --host 0.0.0.0 --port 8001 --log-level info --reload
+    command: uvicorn main:app --host 0.0.0.0 --port 8001 --log-level info --reload
     restart: unless-stopped
     
 
