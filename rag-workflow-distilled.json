@@ -13,6 +13,18 @@
     },
     {
       "parameters": {
+        "path": "log",
+        "httpMethod": "POST",
+        "options": {}
+      },
+      "id": "Log Webhook",
+      "name": "Log Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 100]
+    },
+    {
+      "parameters": {
         "url": "http://chromadb:8000/api/v1/query",
         "method": "POST",
         "jsonParameters": true,

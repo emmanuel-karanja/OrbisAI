@@ -1,0 +1,35 @@
+{
+  "name": "Log Webhook Handler",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "log",
+        "httpMethod": "POST",
+        "options": {}
+      },
+      "id": "Webhook Log",
+      "name": "Webhook Log",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "console.log('Received log data:', $json);\nreturn [{ json: { status: 'Log received', received: $json } }];"
+      },
+      "id": "Print Log",
+      "name": "Print Log",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [500, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Log": {
+      "main": [[{ "node": "Print Log", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": true,
+  "settings": {},
+  "version": 2
+}

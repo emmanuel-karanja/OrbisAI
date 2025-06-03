@@ -135,6 +135,10 @@ def document_exists_and_handle_update(filename, content_bytes):
 def save_document_checksum(filename, content_bytes):
     checksum = get_checksum(content_bytes)
     r.set(filename, checksum)
+    
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
 @app.post("/ingest")
 async def ingest(request: IngestRequest):
