@@ -47,7 +47,6 @@ services:
       - "8001:8001"
     restart: unless-stopped
 
-
   streamlit:
     build: ./streamlit-app
     container_name: streamlit
@@ -59,16 +58,16 @@ services:
       - chromadb
     restart: unless-stopped
 
-  ollama:
-    image: ollama/ollama
-    container_name: ollama
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    restart: unless-stopped
+  # ollama:
+  #   image: ollama/ollama
+  #   container_name: ollama
+  #   ports:
+  #     - "11434:11434"
+  #   volumes:
+  #     - ollama_data:/root/.ollama
+  #   restart: unless-stopped
 
 volumes:
   chroma_data:
   n8n_data:
-  ollama_data:
+  # ollama_data:

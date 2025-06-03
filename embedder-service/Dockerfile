@@ -2,8 +2,13 @@ FROM python:3.13-slim
 
 WORKDIR /app
 
+# Copy requirements first to leverage caching
+COPY requirements.txt .
+
+# Install dependencies only if requirements.txt changed
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy app code last (less likely to change dependencies)
 COPY main.py .
 
-RUN pip install fastapi uvicorn requests transformers sentencepiece torch
-
-CMD ["uvicorn", "ingest:app", "--host", "0.0.0.0", "--port", "8001"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "5000"]
