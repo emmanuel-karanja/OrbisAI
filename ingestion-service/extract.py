@@ -5,7 +5,6 @@ from io import BytesIO
 import markdown
 from bs4 import BeautifulSoup
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from utils.logger import setup_logger
 import redis
 from logger import setup_logger
 

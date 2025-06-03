@@ -3,8 +3,9 @@ from fastapi.responses import JSONResponse
 
 from models import IngestRequest, QueryRequest
 from services import ingest_document, query_docs, ingest_status
-from utils import logger
+from logger import setup_logger
 
+logger = setup_logger("ingestion-service")
 app = FastAPI()
 logger.info("FastAPI app initialized.")
 

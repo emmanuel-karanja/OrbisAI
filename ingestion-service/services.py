@@ -2,8 +2,15 @@ import base64
 from typing import List
 from transformers import pipeline
 from sentence_transformers import SentenceTransformer
-from utils import logger, extract_text_and_metadata, chunk_text_with_metadata, document_exists_and_handle_update, save_document_checksum, r
 from logger import setup_logger
+from extract import (
+    extract_text_and_metadata,
+    chunk_text_with_metadata,
+    document_exists_and_handle_update,
+    save_document_checksum,
+)
+from redis_client import r
+
 import chromadb
 
 logger = setup_logger(name="ingest")

@@ -2,14 +2,14 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install basic tools: build-essential, curl, ping
+# Install build tools and network tools
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
     iputils-ping \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install everything (CPU-only)
+# Install Python dependencies
 COPY requirements.txt .
 
 RUN pip install --no-cache-dir --upgrade pip \
@@ -17,11 +17,16 @@ RUN pip install --no-cache-dir --upgrade pip \
     --extra-index-url https://download.pytorch.org/whl/cpu \
     -r requirements.txt
 
-# Copy your entire app folder (assuming main.py, models.py, services.py, utils/)
+# Copy application code
 COPY main.py .
 COPY models.py .
 COPY services.py .
 COPY logger.py .
+COPY extract.py .
+COPY redis_client.py .
 
-# Run the FastAPI app with uvicorn
+# If you still have anything else like static files, include them here
+# COPY static/ ./static/
+
+# Run the FastAPI app
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001"]

@@ -4,7 +4,7 @@ import base64
 import time
 from logger import setup_logger
 
-logger = setup_logger(name="ingest", level=logging.INFO, log_to_file=True)
+logger = setup_logger("streamlit-app")
 
 st.set_page_config(page_title="OrbisAI RAG System", layout="centered")
 st.title("📄 OrbisAI Document Uploader + Query Interface")
