@@ -1,6 +1,0 @@
-fastapi
-uvicorn[standard]
-sentence-transformers
-torch==2.6.0+cpu
-
-

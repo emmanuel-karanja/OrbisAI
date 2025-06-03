@@ -13,6 +13,8 @@ redis
 pdfplumber
 numpy<2
 httpx>=0.24.0
+sentence-transformers
+
 
 
 

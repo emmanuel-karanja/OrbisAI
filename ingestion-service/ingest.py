@@ -1,6 +1,5 @@
 from fastapi import FastAPI, BackgroundTasks
 from pydantic import BaseModel
-import requests
 import chromadb
 import base64
 import pdfplumber
@@ -17,6 +16,8 @@ import asyncio
 from functools import wraps
 import random
 from fastapi.responses import JSONResponse
+from sentence_transformers import SentenceTransformer
+
 
 logger = setup_logger("ingestion-service")
 
@@ -24,6 +25,8 @@ BATCH_SIZE = 50
 SUMMARY_CHUNK_SIZE = 1000
 
 app = FastAPI()
+model = SentenceTransformer("all-MiniLM-L6-v2")
+logger.info("SentenceTransformer model loaded locally.")
 
 client = chromadb.HttpClient(host="chromadb", port=8000)
 collection = client.get_or_create_collection("docs")
@@ -181,34 +184,12 @@ def ingest_document(request: IngestRequest, collection, summarizer, redis_client
         redis_client.set(doc_key, f"failed:{str(e)}")
 
 
-@async_retry()
-async def batch_embed_texts(texts: List[str]) -> List[List[float]]:
+def batch_embed_texts(texts: List[str]) -> List[List[float]]:
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post("http://embedder:5000/embed", json={"texts": texts})
-            response.raise_for_status()
-            return response.json()["embeddings"]
+        return model.encode(texts).tolist()
     except Exception as e:
-        logger.error(f"Embedding request failed: {e}")
+        logger.error(f"Embedding failed: {e}")
         return []
-
-# Retries with exponential backoff
-def async_retry(retries=3, backoff=1.5, exceptions=(Exception,)):
-    def decorator(func):
-        @wraps(func)
-        async def wrapper(*args, **kwargs):
-            delay = 1
-            for attempt in range(retries):
-                try:
-                    return await func(*args, **kwargs)
-                except exceptions as e:
-                    if attempt == retries - 1:
-                        raise
-                    logger.warning(f"{func.__name__} failed (attempt {attempt+1}), retrying in {delay:.1f}s: {e}")
-                    await asyncio.sleep(delay)
-                    delay *= backoff + random.uniform(0, 0.5)
-        return wrapper
-    return decorator
 
 
 @app.get("/health")
@@ -225,7 +206,7 @@ async def ingest(request: IngestRequest, background_tasks: BackgroundTasks):
 # We'll add a workflow to check if the ingestion was a success
 @app.get("/ingest-status/{filename}")
 def ingest_status(filename: str):
-    doc_key = f"ingest_status:{filename}"
+    doc_key = f"ingestion_status:{filename}"
     status_msg = r.get(doc_key)
     if status_msg:
         return {"status": "ok", "message": status_msg}
@@ -234,8 +215,8 @@ def ingest_status(filename: str):
 @app.post("/query")
 def query_docs(request: QueryRequest):
     logger.info(f"Received query: {request.question}")
-    embedding_response = requests.post("http://embedder:5000/embed", json={"texts": [request.question]})
-    question_embedding = embedding_response.json()["embeddings"][0]
+
+    question_embedding = batch_embed_texts([request.question])[0]
 
     results = collection.query(query_embeddings=[question_embedding], n_results=3)
     documents = results["documents"][0]
