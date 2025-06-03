@@ -16,6 +16,7 @@ logger = setup_logger("ingestion-service")
 
 app = FastAPI()
 
+# collection is a proxy/connection to the remote db that allows you interact with it like a collection data type
 client = chromadb.HttpClient(host="chromadb", port=8000)
 collection = client.get_or_create_collection("docs")
 
@@ -100,16 +101,21 @@ def get_checksum(content_bytes):
     return hashlib.sha256(content_bytes).hexdigest()
 
 def delete_docs_by_name(doc_name: str):
+    # Get all entries that has a matching doc_name in their metadata
     results = collection.get(where={"doc_name": doc_name})
     ids_to_delete = results.get("ids", [])
     if ids_to_delete:
+        # delete those entries
         collection.delete(ids=ids_to_delete)
         logger.info(f"Deleted {len(ids_to_delete)} embeddings for document '{doc_name}'")
     else:
         logger.info(f"No existing embeddings found to delete for document '{doc_name}'")
 
 def document_exists_and_handle_update(filename, content_bytes):
+    #We use this for docs with the same name and we want to find out if the incoming(latest version) has brought
+    # in any new changes than the old version(already embedded), we use a checksum for that
     checksum = get_checksum(content_bytes)
+    # Get the old version from persistent Redis-db
     stored_checksum = r.get(filename)
     if stored_checksum:
         if stored_checksum == checksum:
@@ -131,6 +137,7 @@ def save_document_checksum(filename, content_bytes):
 async def ingest(request: IngestRequest):
     logger.info(f"Starting ingestion for file: {request.filename}")
 
+    # We encode to base64 to allow text, images etc to be treated uniformly.
     content_bytes = base64.b64decode(request.content)
 
     if document_exists_and_handle_update(request.filename, content_bytes):
@@ -167,6 +174,7 @@ async def ingest(request: IngestRequest):
         metadatas=[{"doc_name": request.filename, "page": 0, "paragraph": 0, "summary": True}]
     )
 
+   # Persist the doc and its matching checksum
     save_document_checksum(request.filename, content_bytes)
 
     logger.info(f"Ingestion completed for {request.filename}")
@@ -192,6 +200,7 @@ def query_docs(request: QueryRequest):
     context = "\n\n".join(context_parts)
 
     logger.info("Running QA pipeline...")
+    # Hit the Generator LLM
     answer = qa_pipeline(question=request.question, context=context)
 
     logger.info("Query processed successfully")
