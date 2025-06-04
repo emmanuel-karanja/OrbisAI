@@ -169,13 +169,18 @@ def query_docs(request, model, qa_pipeline, collection):
 
     question_embedding = batch_embed_texts([request.question], model)[0]
 
+    # Get top 3 documents
     results = collection.query(query_embeddings=[question_embedding], n_results=3)
+
     documents = results["documents"][0]
     metadatas = results["metadatas"][0]
+    distances = results.get("distances", [[None]])[0]  # or "scores" depending on vector DB
 
+    # Fetch summary if any
     summary_docs = collection.get(where={"summary": True})
     summary_text = summary_docs["documents"][0] if summary_docs["documents"] else ""
 
+    # Build context
     context_parts = []
     if summary_text:
         context_parts.append("Summary:\n" + summary_text)
@@ -192,5 +197,14 @@ def query_docs(request, model, qa_pipeline, collection):
         "score": answer["score"],
         "context": documents,
         "summary": summary_text,
-        "sources": metadatas
+        "sources": metadatas,
+        "ranked_matches": [
+            {
+                "text": doc,
+                "metadata": meta,
+                "similarity": 1 - dist if dist is not None else None
+            }
+            for doc, meta, dist in zip(documents, metadatas, distances)
+        ]
     }
+

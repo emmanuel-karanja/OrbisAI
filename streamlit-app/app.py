@@ -29,10 +29,8 @@ if uploaded_file:
                 result = response.json()
                 logger.info(f"Ingestion started for {uploaded_file.name}")
 
-                # Optionally wait briefly to allow background ingestion to begin
-                time.sleep(2)
+                time.sleep(2)  # Wait briefly for async ingestion
 
-                # Fetch the ingestion status
                 status_res = requests.get(
                     f"http://ingestion:8001/ingest-status/{uploaded_file.name}",
                     timeout=10
@@ -71,37 +69,31 @@ if st.button("Search") and query_text:
             )
             if qres.status_code == 200:
                 results = qres.json()
-                chunks = results.get("matches", []) or results.get("context", [])
-                metadata = results.get("metadata", []) or results.get("sources", [])
 
-                if chunks:
-                    st.success("✅ Found relevant content:")
-                    logger.info(f"{len(chunks)} matches returned for query.")
-                    for i, chunk in enumerate(chunks):
-                        meta = metadata[i] if i < len(metadata) else {}
-                        st.markdown(f"**📄 Page {meta.get('page', '?')} | Paragraph {meta.get('paragraph', '?')}**")
-                        st.write(chunk)
+                # Display the answer
+                if "answer" in results:
+                    st.markdown("### 💡 Answer")
+                    st.success(results["answer"])
+
+                ranked_matches = results.get("ranked_matches", [])
+
+                if ranked_matches:
+                    st.success("✅ Top Ranked Matches:")
+                    logger.info(f"{len(ranked_matches)} ranked matches returned for query.")
+                    for match in ranked_matches:
+                        meta = match.get("metadata", {})
+                        st.markdown(
+                            f"**📄 {meta.get('doc_name', 'Unknown')} — Page {meta.get('page', '?')} | Paragraph {meta.get('paragraph', '?')}**"
+                        )
+                        st.markdown(f"**🔢 Similarity Score:** `{match.get('similarity', '?')}`")
+                        st.write(match["text"])
                         st.markdown("---")
                 else:
                     logger.warning("No content matched the query.")
-                    st.warning("No relevant content found.")
+                    st.warning("No relevant ranked content found.")
             else:
                 logger.error(f"Query failed: {qres.text}")
                 st.error(f"❌ Query failed: {qres.text}")
         except Exception as e:
             logger.exception(f"Query request failed: {e}")
             st.error(f"❌ Request failed: {e}")
-
-
-st.title("Embedded Documents")
-
-response = requests.get("http://ingestion:8001/documents")
-if response.status_code == 200:
-    data = response.json()
-    if data["status"] == "ok":
-        for doc in data["documents"]:
-            st.markdown(f"- 📄 {doc}")
-    else:
-        st.error(f"Error: {data['message']}")
-else:
-    st.error("Failed to fetch document list.")
