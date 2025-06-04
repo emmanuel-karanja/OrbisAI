@@ -34,7 +34,13 @@ def initialize_services():
     logger.info("Summarizer pipeline loaded.")
 
     logger.info("Loading QA pipeline...")
-    qa_pipeline = pipeline("question-answering", model="distilbert-base-cased-distilled-squad")
+
+    qa_pipeline = pipeline(
+        "question-answering",
+        model="distilbert-base-cased-distilled-squad",
+        tokenizer="distilbert-base-cased-distilled-squad"
+    )
+
    
     logger.info("QA pipeline loaded.")
 
