@@ -41,7 +41,6 @@ def initialize_services():
         tokenizer="ddeepset/roberta-base-squad2"
     )
 
-   
     logger.info("QA pipeline loaded.")
 
     logger.info("Connecting to ChromaDB...")
@@ -67,7 +66,7 @@ def hierarchical_summarize(text: str, summarizer, chunk_size=SUMMARY_CHUNK_SIZE)
     summaries = []
     for i, chunk in enumerate(chunks):
         try:
-            summary = summarizer(chunk, max_length=100, min_length=30, do_sample=False)[0]['summary_text']
+            summary = summarizer(chunk, max_length=500, min_length=30, do_sample=False)[0]['summary_text']
         except Exception as e:
             logger.error(f"Error summarizing chunk {i}: {e}")
             summary = ""
@@ -104,9 +103,10 @@ def ingest_document(request, model, summarizer, collection, redis_client=r):
         content_bytes = base64.b64decode(request.content)
 
         if document_exists_and_handle_update(request.filename, content_bytes):
-            msg = f"Document {request.filename} already ingested with same content, skipping."
-            logger.info(msg)
-            redis_client.set(doc_key, "skipped")
+           msg = f"Document {request.filename} already ingested with same content, skipping."
+           logger.info(msg)
+           redis_client.set(doc_key, f"Skipped: {msg}")
+
             return
 
         pages = extract_text_and_metadata(request.filename, request.content)
