@@ -66,7 +66,7 @@ if st.button("Search") and query_text:
         try:
             qres = requests.post(
                 "http://ingestion:8001/query",
-                json={"query": query_text},
+                json={"question": query_text},  # ✅ Corrected key
                 timeout=30
             )
             if qres.status_code == 200:
@@ -91,6 +91,7 @@ if st.button("Search") and query_text:
         except Exception as e:
             logger.exception(f"Query request failed: {e}")
             st.error(f"❌ Request failed: {e}")
+
 
 st.title("Embedded Documents")
 
