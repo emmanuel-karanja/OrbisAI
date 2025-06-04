@@ -37,11 +37,11 @@ def initialize_services():
 
     qa_pipeline = pipeline(
         "question-answering",
-        model="distilbert-base-cased-distilled-squad",
-        tokenizer="distilbert-base-cased-distilled-squad"
+        model="bert-base-uncased-finetuned-squad",
+        tokenizer="bert-base-uncased",
+        device=-1  # CPU
     )
 
-   
     logger.info("QA pipeline loaded.")
 
     logger.info("Connecting to ChromaDB...")
