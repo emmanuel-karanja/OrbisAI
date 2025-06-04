@@ -66,7 +66,7 @@ if st.button("Search") and query_text:
         try:
             qres = requests.post(
                 "http://ingestion:8001/query",
-                json={"question": query_text},  # ✅ Corrected key
+                json={"question": query_text},
                 timeout=30
             )
             if qres.status_code == 200:
