@@ -54,4 +54,4 @@ def query(request: QueryRequest):
 
 @app.get("/list-documents")
 def list_documents():
-    return list_all_documents()
+    return list_all_documents(collection)
