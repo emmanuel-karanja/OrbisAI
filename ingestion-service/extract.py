@@ -8,7 +8,6 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 import redis
 from logger import setup_logger
 
-
 logger = setup_logger(name="ingest")
 
 r = redis.Redis(host='redis', port=6379, decode_responses=True)
@@ -37,6 +36,22 @@ def extract_text_and_metadata(filename: str, base64_content: str):
             text = para.get_text(separator="\n").strip()
             if text:
                 pages.append({"page": 1, "paragraph": para_num, "text": text})
+
+    elif ext in {"akn", "xml"}:
+        try:
+            xml_text = content_bytes.decode("utf-8", errors="ignore")
+            soup = BeautifulSoup(xml_text, "xml")
+            # Try finding structured legal chunks first
+            elements = soup.find_all(['article', 'section', 'clause', 'paragraph'])
+            if not elements:
+                elements = soup.find_all(['body', 'main', 'text'])  # fallback
+            for i, el in enumerate(elements, start=1):
+                text = el.get_text(separator="\n", strip=True)
+                if text:
+                    pages.append({"page": 1, "paragraph": i, "text": text})
+        except Exception as e:
+            logger.error(f"Failed to parse AKN file: {e}")
+
     else:
         text = content_bytes.decode('utf-8', errors='ignore')
         pages = [{"page": 1, "paragraph": 1, "text": text}]

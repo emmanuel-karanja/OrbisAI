@@ -1,19 +1,24 @@
+# kenya_law_crawler_v2.py
+
 import os
 import re
 import time
 import json
 import threading
+import argparse
 import requests
+from queue import Queue
+from datetime import datetime
 from urllib.parse import urljoin, urlparse, parse_qs
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from selenium.common.exceptions import WebDriverException
-from selenium.webdriver.chrome.service import Service
-
+from hashlib import sha256
 
 class KenyaLawWebCrawler:
     def __init__(self, start_url, max_depth=3, download_root="kenya_laws", max_workers=5):
@@ -42,24 +47,56 @@ class KenyaLawWebCrawler:
 
         self.index = []
         self.saved_count = 0
+        self.save_queue = Queue()
+        threading.Thread(target=self.index_writer, daemon=True).start()
 
         self.load_existing_index()
 
-    def save_index_if_needed(self):
-        with self.index_lock:
-            self.saved_count += 1
-            tqdm.write(f"💾 save_index_if_needed() called, count = {self.saved_count}")
-            if self.saved_count % 25 == 0:
-                tqdm.write("💾 Saving index.json...")
-                self.write_index_file()
+    def log(self, message):
+        tqdm.write(message)
+
+    def file_hash(self, content):
+        return sha256(content).hexdigest()
+
+    def save_index_if_needed(self, entry):
+        self.save_queue.put(entry)
+
+    def index_writer(self):
+        while True:
+            entry = self.save_queue.get()
+            if entry is None:
+                break
+            with self.index_lock:
+                self.index.append(entry)
+                self.saved_count += 1
+                if self.saved_count % 25 == 0:
+                    self.write_index_file()
 
     def write_index_file(self):
         try:
             with open(self.INDEX_JSON, "w", encoding="utf-8") as f:
                 json.dump(self.index, f, indent=2)
-            tqdm.write(f"💾 index.json written successfully with {len(self.index)} entries.")
+            self.log(f"💾 index.json written successfully with {len(self.index)} entries.")
         except Exception as e:
-            tqdm.write(f"❌ Failed to write index.json: {e}")
+            self.log(f"❌ Failed to write index.json: {e}")
+
+    def load_existing_index(self):
+        if os.path.exists(self.INDEX_JSON):
+            self.log(f"📂 index.json found at: {self.INDEX_JSON}")
+            try:
+                with open(self.INDEX_JSON, "r", encoding="utf-8") as f:
+                    existing = json.load(f)
+                    for entry in existing:
+                        if entry["type"] == "pdf":
+                            self.downloaded_files.add(entry.get("file", ""))
+                        elif entry["type"] == "akn":
+                            self.downloaded_files.add(entry.get("file_html", ""))
+                        self.index.append(entry)
+                self.log(f"📂 Loaded {len(existing)} entries. {len(self.downloaded_files)} files marked as downloaded.")
+            except Exception as e:
+                self.log(f"⚠️ Could not read or parse index.json: {e}")
+        else:
+            self.log("📁 No existing index.json found. Starting fresh.")
 
     def setup_browser(self):
         options = Options()
@@ -73,34 +110,11 @@ class KenyaLawWebCrawler:
             browser = webdriver.Chrome(service=service, options=options)
             return browser
         except WebDriverException as e:
-            tqdm.write(f"❌ Failed to launch browser: {e}")
+            self.log(f"❌ Failed to launch browser: {e}")
             return None
         except Exception as e:
-            tqdm.write(f"❌ Unexpected error initializing browser: {e}")
+            self.log(f"❌ Unexpected error initializing browser: {e}")
             return None
-
-    def load_existing_index(self):
-        if os.path.exists(self.INDEX_JSON):
-            tqdm.write(f"📂 index.json found at: {self.INDEX_JSON}")
-            try:
-                with open(self.INDEX_JSON, "r", encoding="utf-8") as f:
-                    existing = json.load(f)
-                    for entry in existing:
-                        if entry["type"] == "pdf":
-                            self.downloaded_files.add(entry.get("file", ""))
-                        elif entry["type"] == "akn":
-                            self.downloaded_files.add(entry.get("file_html", ""))
-                        self.index.append(entry)
-                tqdm.write(f"📂 Loaded {len(existing)} entries. {len(self.downloaded_files)} files marked as downloaded.")
-            except Exception as e:
-                tqdm.write(f"⚠️ Could not read or parse index.json: {e}")
-        else:
-            tqdm.write("📁 No existing index.json found. Starting fresh.")
-
-    def sanitize_filename(self, text):
-        text = re.sub(r"[^\w\-]+", "_", text)
-        text = re.sub(r"_+", "_", text)
-        return text.strip("_")[:80] or "untitled"
 
     def download_file(self, url):
         for attempt in range(1, self.RETRY_COUNT + 1):
@@ -109,9 +123,27 @@ class KenyaLawWebCrawler:
                 res.raise_for_status()
                 return res
             except Exception as e:
-                tqdm.write(f"⚠️ Retry {attempt} for {url}: {e}")
+                self.log(f"⚠️ Retry {attempt} for {url}: {e}")
                 time.sleep(2 ** attempt)
         return None
+
+    def sanitize_filename(self, text):
+        text = re.sub(r"[^\w\-]+", "_", text)
+        text = re.sub(r"_+", "_", text)
+        return text.strip("_")[:80] or "untitled"
+
+    def extract_metadata(self, soup, url):
+        title = soup.title.string.strip() if soup.title else "Untitled"
+        parsed = urlparse(url)
+        act_id = parse_qs(parsed.query).get("actid", [""])[0].replace("%20", " ")
+        cap_match = re.search(r"CAP\.?\s?\d+[A-Z]?", title, re.IGNORECASE)
+        year_match = re.search(r"\b(19|20)\d{2}\b", title)
+        return {
+            "title": title,
+            "act_id": act_id if act_id else None,
+            "cap": cap_match.group(0) if cap_match else None,
+            "year": int(year_match.group(0)) if year_match else None
+        }
 
     def extract_act_body(self, html, title="Act"):
         soup = BeautifulSoup(html, "html.parser")
@@ -124,16 +156,7 @@ class KenyaLawWebCrawler:
         if not body:
             body = soup.find("main") or soup.body
         page_title = title or (soup.title.string if soup.title else "Act")
-        return f"""<!DOCTYPE html>
-<html lang=\"en\">
-<head>
-<meta charset=\"UTF-8\" />
-<title>{page_title}</title>
-</head>
-<body>
-{body.prettify() if body else '<p>[No content found]</p>'}
-</body>
-</html>"""
+        return f"""<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\" /><title>{page_title}</title></head><body>{body.prettify() if body else '<p>[No content found]</p>'}</body></html>"""
 
     def convert_to_markdown(self, soup: BeautifulSoup, title="Document"):
         lines = [f"# {title}", ""]
@@ -154,19 +177,6 @@ class KenyaLawWebCrawler:
                 lines.append("")
         return "\n".join(lines)
 
-    def extract_metadata(self, soup, url):
-        title = soup.title.string.strip() if soup.title else "Untitled"
-        parsed = urlparse(url)
-        act_id = parse_qs(parsed.query).get("actid", [""])[0].replace("%20", " ")
-        cap_match = re.search(r"CAP\.?\s?\d+[A-Z]?", title, re.IGNORECASE)
-        year_match = re.search(r"\b(19|20)\d{2}\b", title)
-        return {
-            "title": title,
-            "act_id": act_id if act_id else None,
-            "cap": cap_match.group(0) if cap_match else None,
-            "year": int(year_match.group(0)) if year_match else None
-        }
-
     def render_with_browser(self, url):
         try:
             browser = self.setup_browser()
@@ -174,10 +184,10 @@ class KenyaLawWebCrawler:
             time.sleep(4)
             html = browser.page_source
             browser.quit()
-            tqdm.write(f"✅ Rendered content from: {url}")
+            self.log(f"✅ Rendered content from: {url}")
             return html
         except Exception as e:
-            tqdm.write(f"❌ Failed to render with browser: {url} — {e}")
+            self.log(f"❌ Failed to render with browser: {url} — {e}")
             return None
 
     def save_pdf(self, link, from_page):
@@ -188,24 +198,23 @@ class KenyaLawWebCrawler:
 
         with self.downloaded_lock:
             if os.path.exists(path) or fname in self.downloaded_files:
-                tqdm.write(f"✅ Skipped existing PDF: {path}")
+                self.log(f"✅ Skipped existing PDF: {path}")
                 return None
 
-        tqdm.write(f"📄 Downloading PDF from: {from_page} → {link}")
+        self.log(f"📄 Downloading PDF from: {from_page} → {link}")
         res = self.download_file(link)
         if res and "application/pdf" in res.headers.get("Content-Type", ""):
             with open(path, "wb") as f:
                 f.write(res.content)
             with self.downloaded_lock:
                 self.downloaded_files.add(fname)
-            tqdm.write(f"✅ PDF saved: {path}")
+            self.log(f"✅ PDF saved: {path}")
             return fname
         return None
 
     def save_akn_html(self, link, from_page):
         link_lower = link.lower()
-        fname = None
-
+        prefix = "document"
         if "/judgment/" in link_lower:
             prefix = "judgment"
             path_part = link_lower.split("/judgment/")[-1]
@@ -216,7 +225,6 @@ class KenyaLawWebCrawler:
             prefix = "act"
             path_part = parse_qs(urlparse(link).query).get("actid", ["act"])[0]
         else:
-            prefix = "document"
             path_part = os.path.basename(urlparse(link).path)
 
         fname_raw = f"{prefix}_{self.sanitize_filename(path_part)}.html"
@@ -225,10 +233,10 @@ class KenyaLawWebCrawler:
 
         with self.downloaded_lock:
             if os.path.exists(path) or fname_raw in self.downloaded_files:
-                tqdm.write(f"✅ Skipped existing HTML: {path}")
+                self.log(f"✅ Skipped existing HTML: {path}")
                 return None
 
-        tqdm.write(f"🌐 Rendering AKN/Act page: {from_page} → {link}")
+        self.log(f"🌐 Rendering AKN/Act page: {from_page} → {link}")
         html = self.render_with_browser(link)
         if not html:
             return None
@@ -236,7 +244,7 @@ class KenyaLawWebCrawler:
         try:
             with open(raw_path, "w", encoding="utf-8") as raw:
                 raw.write(html)
-            tqdm.write(f"📄 Raw HTML saved: {raw_path}")
+            self.log(f"📄 Raw HTML saved: {raw_path}")
 
             soup = BeautifulSoup(html, "html.parser")
             title = soup.title.string.strip() if soup.title else link
@@ -254,8 +262,8 @@ class KenyaLawWebCrawler:
             with self.downloaded_lock:
                 self.downloaded_files.add(fname_raw)
 
-            tqdm.write(f"✅ HTML saved: {path}")
-            tqdm.write(f"✅ Markdown saved: {markdown_path}")
+            self.log(f"✅ HTML saved: {path}")
+            self.log(f"✅ Markdown saved: {markdown_path}")
             return {
                 "type": "akn",
                 "url": link,
@@ -265,7 +273,7 @@ class KenyaLawWebCrawler:
                 "metadata": metadata
             }
         except Exception as e:
-            tqdm.write(f"❌ Error saving AKN HTML from {link}: {e}")
+            self.log(f"❌ Error saving AKN HTML from {link}: {e}")
             with open(self.LOG_FILE, "a", encoding="utf-8") as f:
                 f.write(f"[FAIL HTML] {link}: {e}\n")
             return None
@@ -276,7 +284,7 @@ class KenyaLawWebCrawler:
                 return
             self.visited_urls.add(current_url)
 
-        tqdm.write(f"🔎 Crawling (depth={current_depth}): {current_url}")
+        self.log(f"🔎 Crawling (depth={current_depth}): {current_url}")
         try:
             res = requests.get(current_url, headers=self.HEADERS, timeout=self.TIMEOUT)
             res.raise_for_status()
@@ -296,8 +304,7 @@ class KenyaLawWebCrawler:
             if ".pdf" in link.lower():
                 fname = self.save_pdf(link, current_url)
                 if fname:
-                    self.index.append({"type": "pdf", "url": link, "source": current_url, "file": fname})
-                    self.save_index_if_needed()
+                    self.save_index_if_needed({"type": "pdf", "url": link, "source": current_url, "file": fname})
 
             elif (
                 ".akn" in link.lower()
@@ -306,8 +313,7 @@ class KenyaLawWebCrawler:
             ):
                 info = self.save_akn_html(link, current_url)
                 if info:
-                    self.index.append(info)
-                    self.save_index_if_needed()
+                    self.save_index_if_needed(info)
 
             elif urlparse(link).netloc == urlparse(self.START_URL).netloc:
                 with self.visited_lock:
@@ -316,9 +322,10 @@ class KenyaLawWebCrawler:
                             stack.append((link, current_depth + 1))
 
     def run(self):
-        tqdm.write("🚀 Starting DFS crawl...")
-        stack = [(self.START_URL, 0)]
+        self.log("🚀 Starting DFS crawl...")
+        start_time = datetime.now()
 
+        stack = [(self.START_URL, 0)]
         with ThreadPoolExecutor(max_workers=self.MAX_WORKERS) as executor:
             while stack:
                 batch = []
@@ -329,19 +336,32 @@ class KenyaLawWebCrawler:
                 for future in as_completed(futures):
                     pass
 
+        self.save_queue.put(None)  # signal to stop index writer
         self.write_index_file()
 
-        tqdm.write(f"\n✅ Done. Total documents saved: {len(self.index)}")
-        tqdm.write(f"📦 PDFs: {len([i for i in self.index if i['type'] == 'pdf'])}")
-        tqdm.write(f"🌐 AKN/Act Pages: {len([i for i in self.index if i['type'] == 'akn'])}")
-        tqdm.write(f"📄 Crawl index saved to {self.INDEX_JSON}")
+        end_time = datetime.now()
+        self.log(f"\n✅ Done. Total documents saved: {len(self.index)}")
+        self.log(f"📦 PDFs: {len([i for i in self.index if i['type'] == 'pdf'])}")
+        self.log(f"🌐 AKN/Act Pages: {len([i for i in self.index if i['type'] == 'akn'])}")
+        self.log(f"📄 Crawl index saved to {self.INDEX_JSON}")
+        self.log(f"🕒 Total crawl time: {end_time - start_time}")
 
+# Entry point with argparse
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Kenya Law Crawler")
+    parser.add_argument("--url", type=str, required=True, help="Starting URL")
+    parser.add_argument("--depth", type=int, default=3, help="Max crawl depth")
+    parser.add_argument("--workers", type=int, default=5, help="Max worker threads")
+    parser.add_argument("--output", type=str, default="kenya_laws", help="Download output directory")
+    return parser.parse_args()
 
 if __name__ == "__main__":
+    args = parse_args()
     crawler = KenyaLawWebCrawler(
-        start_url="http://www.kenyalaw.org/lex//index.xql",
-        max_depth=3,
-        download_root="C:\\Users\\ZBOOK\\Downloads\\kenya_laws",
-        max_workers=5
+        start_url=args.url,
+        max_depth=args.depth,
+        download_root=args.output,
+        max_workers=args.workers
     )
     crawler.run()
