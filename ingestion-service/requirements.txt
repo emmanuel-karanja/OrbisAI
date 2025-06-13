@@ -13,8 +13,6 @@ redis
 pdfplumber
 numpy<2
 sentence-transformers
-beautifulSoup
-
 
 
 
