@@ -7,6 +7,7 @@ from services import (
     query_docs,
     ingest_status,
     initialize_services,
+    list_all_documents
 )
 from logger import setup_logger
 
@@ -51,7 +52,6 @@ def query(request: QueryRequest):
     return query_docs(request, model, qa_pipeline, collection)
 
 
-@app.get("/documents")
+@app.get("/list-documents")
 def list_documents():
-    from services import list_all_documents
     return list_all_documents()

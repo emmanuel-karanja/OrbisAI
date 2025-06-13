@@ -107,7 +107,7 @@ def ingest_document(request, model, summarizer, collection, redis_client=r):
            logger.info(msg)
            redis_client.set(doc_key, f"Skipped: {msg}")
 
-            return
+           return
 
         pages = extract_text_and_metadata(request.filename, request.content)
         for page in pages:
@@ -214,3 +214,21 @@ def query_docs(request, model, qa_pipeline, collection):
         ]
     }
 
+def list_all_documents(collection):
+    try:
+        logger.info("Fetching all document names from collection...")
+
+        # Retrieve all metadata entries
+        results = collection.get(include=["metadatas"])
+        metadatas = results.get("metadatas", [])
+
+        # Extract unique document names
+        doc_names = {meta.get("doc_name") for meta in metadatas if meta.get("doc_name")}
+        doc_names = sorted(doc_names)
+
+        logger.info(f"Found {len(doc_names)} unique documents.")
+
+        return {"status": "ok", "documents": doc_names}
+    except Exception as e:
+        logger.error(f"Failed to list documents: {e}")
+        return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})

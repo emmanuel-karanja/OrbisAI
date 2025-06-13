@@ -9,9 +9,11 @@ logger = setup_logger("streamlit-app")
 st.set_page_config(page_title="OrbisAI RAG System", layout="centered")
 st.title("📄 OrbisAI Document Uploader + Query Interface")
 
-st.header("📤 Upload Document")
-
-uploaded_file = st.file_uploader("Choose a file", type=["txt", "md", "pdf"])
+# ───────────────────────────────
+# 📤 Sidebar: Upload Document
+# ───────────────────────────────
+st.sidebar.header("📤 Upload Document")
+uploaded_file = st.sidebar.file_uploader("Choose a file", type=["txt", "md", "pdf"])
 
 if uploaded_file:
     file_bytes = uploaded_file.read()
@@ -52,8 +54,48 @@ if uploaded_file:
             logger.exception(f"Exception during ingestion for {uploaded_file.name}: {e}")
             st.error(f"❌ Request failed: {e}")
 
-st.divider()
+# ───────────────────────────────
+# 📚 Sidebar: List All Uploaded Books (Paginated)
+# ───────────────────────────────
+st.sidebar.header("📚 Uploaded Books")
 
+try:
+    doc_res = requests.get("http://ingestion:8001/list-documents", timeout=10)
+    if doc_res.status_code == 200:
+        doc_list = sorted(doc_res.json().get("documents", []))
+        docs_per_page = 10
+        total_docs = len(doc_list)
+        total_pages = (total_docs - 1) // docs_per_page + 1
+
+        if "doc_page" not in st.session_state:
+            st.session_state.doc_page = 0
+
+        col1, col2 = st.sidebar.columns([1, 1])
+        with col1:
+            if st.button("⬅️ Prev", key="prev") and st.session_state.doc_page > 0:
+                st.session_state.doc_page -= 1
+        with col2:
+            if st.button("Next ➡️", key="next") and st.session_state.doc_page < total_pages - 1:
+                st.session_state.doc_page += 1
+
+        start = st.session_state.doc_page * docs_per_page
+        end = start + docs_per_page
+        paged_docs = doc_list[start:end]
+
+        st.sidebar.markdown(f"📄 Showing {start+1}-{min(end, total_docs)} of {total_docs}")
+
+        for doc in paged_docs:
+            st.sidebar.markdown(f"- `{doc}`")
+
+    else:
+        st.sidebar.warning("⚠️ Failed to retrieve documents.")
+except Exception as e:
+    st.sidebar.error(f"Error fetching documents: {e}")
+
+# ───────────────────────────────
+# 🔍 Query Interface
+# ───────────────────────────────
+st.divider()
 st.header("🔍 Query Your Documents")
 
 query_text = st.text_input("Type your question about any uploaded document:")
@@ -70,7 +112,6 @@ if st.button("Search") and query_text:
             if qres.status_code == 200:
                 results = qres.json()
 
-                # Display the answer
                 if "answer" in results:
                     st.markdown("### 💡 Answer")
                     st.success(results["answer"])
