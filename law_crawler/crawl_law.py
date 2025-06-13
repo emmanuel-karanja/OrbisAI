@@ -4,7 +4,7 @@ import time
 import json
 import threading
 import requests
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin, urlparse, parse_qs
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -13,12 +13,8 @@ from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
-class WebCrawler:
-    def __init__(self,
-                 start_url="http://www.kenyalaw.org/lex//index.xql",
-                 max_depth=3,
-                 download_root="kenya_laws",
-                 max_workers=5):
+class KenyaLawWebCrawler:
+    def __init__(self, start_url, max_depth=3, download_root="kenya_laws", max_workers=5):
         self.START_URL = start_url
         self.MAX_DEPTH = max_depth
         self.DOWNLOAD_ROOT = download_root
@@ -44,15 +40,16 @@ class WebCrawler:
         self.index = []
 
     def setup_browser(self):
-        chrome_options = Options()
-        chrome_options.add_argument("--headless=new")
-        chrome_options.add_argument("--disable-gpu")
-        chrome_options.add_argument("--no-sandbox")
-        chrome_options.add_argument("--disable-dev-shm-usage")
-        return webdriver.Chrome(ChromeDriverManager().install(), options=chrome_options)
+        options = Options()
+        options.add_argument("--headless=new")
+        options.add_argument("--disable-gpu")
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-dev-shm-usage")
+        return webdriver.Chrome(ChromeDriverManager().install(), options=options)
 
     def sanitize_filename(self, text):
         text = re.sub(r"[^\w\-]+", "_", text)
+        text = re.sub(r"_+", "_", text)
         return text.strip("_")[:80] or "untitled"
 
     def download_file(self, url):
@@ -87,6 +84,38 @@ class WebCrawler:
 {body.prettify() if body else '<p>[No content found]</p>'}
 </body>
 </html>"""
+
+    def convert_to_markdown(self, soup: BeautifulSoup, title="Document"):
+        lines = [f"# {title}", ""]
+        for tag in soup.body.descendants:
+            if tag.name in ["h1", "h2", "h3"]:
+                lines.append(f"{'#' * int(tag.name[1])} {tag.get_text(strip=True)}\n")
+            elif tag.name == "p":
+                text = tag.get_text(strip=True)
+                if text:
+                    lines.append(f"{text}\n")
+            elif tag.name == "ul":
+                for li in tag.find_all("li"):
+                    lines.append(f"- {li.get_text(strip=True)}")
+            elif tag.name == "ol":
+                for i, li in enumerate(tag.find_all("li"), 1):
+                    lines.append(f"{i}. {li.get_text(strip=True)}")
+            elif tag.name == "br":
+                lines.append("")
+        return "\n".join(lines)
+
+    def extract_metadata(self, soup, url):
+        title = soup.title.string.strip() if soup.title else "Untitled"
+        parsed = urlparse(url)
+        act_id = parse_qs(parsed.query).get("actid", [""])[0].replace("%20", " ")
+        cap_match = re.search(r"CAP\.?\s?\d+[A-Z]?", title, re.IGNORECASE)
+        year_match = re.search(r"\b(19|20)\d{2}\b", title)
+        return {
+            "title": title,
+            "act_id": act_id if act_id else None,
+            "cap": cap_match.group(0) if cap_match else None,
+            "year": int(year_match.group(0)) if year_match else None
+        }
 
     def render_with_browser(self, url):
         browser = self.setup_browser()
@@ -125,19 +154,35 @@ class WebCrawler:
             if os.path.exists(path) or fname in self.downloaded_files:
                 return None
 
-        tqdm.write(f"🌐 Rendering AKN HTML from: {from_page} → {link}")
+        tqdm.write(f"🌐 Rendering AKN/Act page: {from_page} → {link}")
         html = self.render_with_browser(link)
         soup = BeautifulSoup(html, "html.parser")
         title = soup.title.string.strip() if soup.title else link
         clean_html = self.extract_act_body(html, title)
+        metadata = self.extract_metadata(soup, link)
 
         with open(path, "w", encoding="utf-8") as f:
             f.write(clean_html)
 
+        # Save Markdown
+        markdown_path = path.replace(".html", ".md")
+        markdown = self.convert_to_markdown(soup, title)
+        with open(markdown_path, "w", encoding="utf-8") as f:
+            f.write(markdown)
+
         with self.downloaded_lock:
             self.downloaded_files.add(fname)
+
         tqdm.write(f"✅ HTML saved: {path}")
-        return fname
+        tqdm.write(f"✅ Markdown saved: {markdown_path}")
+        return {
+            "type": "akn",
+            "url": link,
+            "source": from_page,
+            "file_html": fname,
+            "file_md": os.path.basename(markdown_path),
+            "metadata": metadata
+        }
 
     def crawl_worker(self, current_url, current_depth, stack):
         with self.visited_lock:
@@ -167,10 +212,14 @@ class WebCrawler:
                 if fname:
                     self.index.append({"type": "pdf", "url": link, "source": current_url, "file": fname})
 
-            elif ".akn" in link.lower() or "/akn/ke/" in link.lower():
-                fname = self.save_akn_html(link, current_url)
-                if fname:
-                    self.index.append({"type": "akn", "url": link, "source": current_url, "file": fname})
+            elif (
+                ".akn" in link.lower()
+                or "/akn/ke/" in link.lower()
+                or "actview.xql?actid=" in link.lower()
+            ):
+                info = self.save_akn_html(link, current_url)
+                if info:
+                    self.index.append(info)
 
             elif urlparse(link).netloc == urlparse(self.START_URL).netloc:
                 with self.visited_lock:
@@ -190,19 +239,19 @@ class WebCrawler:
                         batch.append(stack.pop())
                 futures = [executor.submit(self.crawl_worker, url, depth, stack) for url, depth in batch]
                 for future in as_completed(futures):
-                    pass  # Wait for all to finish
+                    pass
 
         with open(self.INDEX_JSON, "w", encoding="utf-8") as f:
             json.dump(self.index, f, indent=2)
 
         tqdm.write(f"\n✅ Done. Total documents saved: {len(self.index)}")
         tqdm.write(f"📦 PDFs: {len([i for i in self.index if i['type'] == 'pdf'])}")
-        tqdm.write(f"🌐 AKN HTMLs: {len([i for i in self.index if i['type'] == 'akn'])}")
+        tqdm.write(f"🌐 AKN/Act Pages: {len([i for i in self.index if i['type'] == 'akn'])}")
         tqdm.write(f"📄 Crawl index saved to {self.INDEX_JSON}")
 
 
 if __name__ == "__main__":
-    crawler = WebCrawler(
+    crawler = KenyaLawWebCrawler(
         start_url="http://www.kenyalaw.org/lex//index.xql",
         max_depth=3,
         download_root="C:\\Users\\ZBOOK\\Downloads\\kenya_laws",
