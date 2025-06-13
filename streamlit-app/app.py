@@ -10,7 +10,7 @@ st.set_page_config(page_title="OrbisAI RAG System", layout="centered")
 st.title("📄 OrbisAI Cicero")
 
 # ───────────────────────────────
-# 📤 Sidebar: Upload Document
+# 📤 Sidebar: Upload Document + Ingestion Status
 # ───────────────────────────────
 st.sidebar.header("📤 Upload Document")
 uploaded_file = st.sidebar.file_uploader("Choose a file", type=["txt", "md", "pdf"])
@@ -20,19 +20,21 @@ if uploaded_file:
     encoded = base64.b64encode(file_bytes).decode()
     logger.info(f"Uploading file: {uploaded_file.name}, size: {len(file_bytes)} bytes")
 
-    with st.spinner("Processing and storing..."):
+    with st.sidebar.spinner("📡 Uploading and processing..."):
         try:
             response = requests.post(
                 "http://ingestion:8001/ingest",
                 json={"filename": uploaded_file.name, "content": encoded},
                 timeout=60
             )
+
             if response.status_code == 200:
                 result = response.json()
                 logger.info(f"Ingestion started for {uploaded_file.name}")
 
-                time.sleep(2)  # Wait briefly for async ingestion
+                time.sleep(2)  # Let backend process asynchronously
 
+                # Check ingestion status
                 status_res = requests.get(
                     f"http://ingestion:8001/ingest-status/{uploaded_file.name}",
                     timeout=10
@@ -40,19 +42,22 @@ if uploaded_file:
 
                 if status_res.status_code == 200:
                     msg = status_res.json().get("message", "Ingestion complete.")
-                    logger.info(f"Ingest status: {msg}")
-                    st.success(f"✅ {msg}")
+                    logger.info(f"Ingestion status: {msg}")
+                    st.sidebar.success(f"✅ {msg}")
                 else:
-                    st.warning("⚠️ Ingestion status not available yet.")
+                    st.sidebar.warning("⚠️ Ingestion status not available yet.")
 
+                # Optionally show summary in main area
                 if "summary" in result:
                     st.markdown(f"### ✨ Summary:\n{result.get('summary', '')}")
+
             else:
                 logger.error(f"Ingestion failed for {uploaded_file.name}: {response.text}")
-                st.error(f"❌ Failed: {response.text}")
+                st.sidebar.error(f"❌ Failed to ingest: {response.text}")
+
         except Exception as e:
-            logger.exception(f"Exception during ingestion for {uploaded_file.name}: {e}")
-            st.error(f"❌ Request failed: {e}")
+            logger.exception(f"Exception during ingestion: {e}")
+            st.sidebar.error(f"❌ Request failed: {e}")
 
 # ───────────────────────────────
 # 📚 Sidebar: List All Uploaded Books (Paginated)
