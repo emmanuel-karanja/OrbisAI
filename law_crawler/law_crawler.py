@@ -38,8 +38,23 @@ class KenyaLawWebCrawler:
         self.visited_lock = threading.Lock()
         self.downloaded_lock = threading.Lock()
         self.stack_lock = threading.Lock()
+        self.index_lock = threading.Lock()
 
         self.index = []
+        self.saved_count = 0
+
+        self.load_existing_index()
+
+    def save_index_if_needed(self):
+        with self.index_lock:
+            self.saved_count += 1
+            if self.saved_count % 25 == 0:
+                self.write_index_file()
+
+    def write_index_file(self):
+        with open(self.INDEX_JSON, "w", encoding="utf-8") as f:
+            json.dump(self.index, f, indent=2)
+        tqdm.write(f"💾 index.json saved after {self.saved_count} files.")
 
     def setup_browser(self):
         options = Options()
@@ -59,7 +74,20 @@ class KenyaLawWebCrawler:
             tqdm.write(f"❌ Unexpected error initializing browser: {e}")
             return None
 
-
+    def load_existing_index(self):
+        if os.path.exists(self.INDEX_JSON):
+            try:
+                with open(self.INDEX_JSON, "r", encoding="utf-8") as f:
+                    existing = json.load(f)
+                    for entry in existing:
+                        if entry["type"] == "pdf":
+                            self.downloaded_files.add(entry.get("file", ""))
+                        elif entry["type"] == "akn":
+                            self.downloaded_files.add(entry.get("file_html", ""))
+                        self.index.append(entry)
+                tqdm.write(f"📂 Loaded {len(self.downloaded_files)} previously downloaded files from index.json")
+            except Exception as e:
+                tqdm.write(f"⚠️ Could not read or parse index.json: {e}")
 
     def sanitize_filename(self, text):
         text = re.sub(r"[^\w\-]+", "_", text)
@@ -89,9 +117,9 @@ class KenyaLawWebCrawler:
             body = soup.find("main") or soup.body
         page_title = title or (soup.title.string if soup.title else "Act")
         return f"""<!DOCTYPE html>
-<html lang="en">
+<html lang=\"en\">
 <head>
-<meta charset="UTF-8" />
+<meta charset=\"UTF-8\" />
 <title>{page_title}</title>
 </head>
 <body>
@@ -166,7 +194,6 @@ class KenyaLawWebCrawler:
             return fname
         return None
 
-    
     def save_akn_html(self, link, from_page):
         link_lower = link.lower()
         fname = None
@@ -262,6 +289,7 @@ class KenyaLawWebCrawler:
                 fname = self.save_pdf(link, current_url)
                 if fname:
                     self.index.append({"type": "pdf", "url": link, "source": current_url, "file": fname})
+                    self.save_index_if_needed()
 
             elif (
                 ".akn" in link.lower()
@@ -271,6 +299,7 @@ class KenyaLawWebCrawler:
                 info = self.save_akn_html(link, current_url)
                 if info:
                     self.index.append(info)
+                    self.save_index_if_needed()
 
             elif urlparse(link).netloc == urlparse(self.START_URL).netloc:
                 with self.visited_lock:
@@ -292,8 +321,7 @@ class KenyaLawWebCrawler:
                 for future in as_completed(futures):
                     pass
 
-        with open(self.INDEX_JSON, "w", encoding="utf-8") as f:
-            json.dump(self.index, f, indent=2)
+        self.write_index_file()
 
         tqdm.write(f"\n✅ Done. Total documents saved: {len(self.index)}")
         tqdm.write(f"📦 PDFs: {len([i for i in self.index if i['type'] == 'pdf'])}")
