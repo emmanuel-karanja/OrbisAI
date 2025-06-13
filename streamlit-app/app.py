@@ -102,7 +102,7 @@ try:
     doc_res = requests.get("http://ingestion:8001/list-documents", timeout=10)
     if doc_res.status_code == 200:
         doc_list = sorted(doc_res.json().get("documents", []))
-        all_documents = doc_list  # for dropdown filter
+        all_documents = doc_list
         docs_per_page = 10
         total_docs = len(doc_list)
         total_pages = (total_docs - 1) // docs_per_page + 1
@@ -133,17 +133,12 @@ except Exception as e:
     st.sidebar.error(f"Error fetching documents: {e}")
 
 # ───────────────────────────────
-# 🔍 Query Interface + History + Filter
+# 🔍 Query Interface + History
 # ───────────────────────────────
 st.divider()
 st.header("🔍 Query Your Documents")
 
 query_history = load_query_history_from_db()
-
-# Optional filter for document selection
-selected_doc = None
-if all_documents:
-    selected_doc = st.selectbox("📁 Limit query to a specific document (optional):", ["All Documents"] + all_documents)
 
 query_text = st.text_input("Type your question about any uploaded document:")
 
@@ -153,9 +148,6 @@ if st.button("Search") and query_text:
     with st.spinner("Searching..."):
         try:
             payload = {"question": query_text}
-            if selected_doc and selected_doc != "All Documents":
-                payload["doc_name"] = selected_doc
-
             qres = requests.post(
                 "http://ingestion:8001/query",
                 json=payload,
