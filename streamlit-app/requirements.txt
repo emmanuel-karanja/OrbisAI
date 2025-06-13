@@ -1,3 +1,4 @@
 streamlit
 requests
 torch==2.6.0+cpu
+sqlite3

@@ -2,9 +2,45 @@ import streamlit as st
 import requests
 import base64
 import time
+import sqlite3
 from logger import setup_logger
 
+# ───────────────────────────────
+# 🧠 SQLite Helpers
+# ───────────────────────────────
+DB_PATH = "query_history.db"
+
+def init_db():
+    conn = sqlite3.connect(DB_PATH)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            query TEXT NOT NULL,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+def save_query_to_db(query):
+    conn = sqlite3.connect(DB_PATH)
+    conn.execute("INSERT INTO history (query) VALUES (?)", (query,))
+    conn.commit()
+    conn.close()
+
+def load_query_history_from_db(limit=10):
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute("SELECT query, timestamp FROM history ORDER BY timestamp DESC LIMIT ?", (limit,))
+    rows = cur.fetchall()
+    conn.close()
+    return rows
+
+# ───────────────────────────────
+# 🚀 Streamlit App Start
+# ───────────────────────────────
 logger = setup_logger("streamlit-app")
+init_db()
 
 st.set_page_config(page_title="OrbisAI RAG System", layout="centered")
 st.title("📄 OrbisAI Cicero")
@@ -32,9 +68,8 @@ if uploaded_file:
                 result = response.json()
                 logger.info(f"Ingestion started for {uploaded_file.name}")
 
-                time.sleep(2)  # Let backend process asynchronously
+                time.sleep(2)
 
-                # Check ingestion status
                 status_res = requests.get(
                     f"http://ingestion:8001/ingest-status/{uploaded_file.name}",
                     timeout=10
@@ -47,14 +82,12 @@ if uploaded_file:
                 else:
                     st.sidebar.warning("⚠️ Ingestion status not available yet.")
 
-                # Optionally show summary in main area
                 if "summary" in result:
                     st.markdown(f"### ✨ Summary:\n{result.get('summary', '')}")
 
             else:
-                logger.error(f"Ingestion failed for {uploaded_file.name}: {response.text}")
-                st.sidebar.error(f"❌ Failed to ingest: {response.text}")
-
+                logger.error(f"Ingestion failed: {response.text}")
+                st.sidebar.error(f"❌ Failed: {response.text}")
         except Exception as e:
             logger.exception(f"Exception during ingestion: {e}")
             st.sidebar.error(f"❌ Request failed: {e}")
@@ -64,10 +97,12 @@ if uploaded_file:
 # ───────────────────────────────
 st.sidebar.header("📚 Uploaded Books")
 
+all_documents = []
 try:
     doc_res = requests.get("http://ingestion:8001/list-documents", timeout=10)
     if doc_res.status_code == 200:
         doc_list = sorted(doc_res.json().get("documents", []))
+        all_documents = doc_list  # for dropdown filter
         docs_per_page = 10
         total_docs = len(doc_list)
         total_pages = (total_docs - 1) // docs_per_page + 1
@@ -98,22 +133,35 @@ except Exception as e:
     st.sidebar.error(f"Error fetching documents: {e}")
 
 # ───────────────────────────────
-# 🔍 Query Interface
+# 🔍 Query Interface + History + Filter
 # ───────────────────────────────
 st.divider()
 st.header("🔍 Query Your Documents")
+
+query_history = load_query_history_from_db()
+
+# Optional filter for document selection
+selected_doc = None
+if all_documents:
+    selected_doc = st.selectbox("📁 Limit query to a specific document (optional):", ["All Documents"] + all_documents)
 
 query_text = st.text_input("Type your question about any uploaded document:")
 
 if st.button("Search") and query_text:
     logger.info(f"Query submitted: {query_text}")
+    save_query_to_db(query_text)
     with st.spinner("Searching..."):
         try:
+            payload = {"question": query_text}
+            if selected_doc and selected_doc != "All Documents":
+                payload["doc_name"] = selected_doc
+
             qres = requests.post(
                 "http://ingestion:8001/query",
-                json={"question": query_text},
+                json=payload,
                 timeout=30
             )
+
             if qres.status_code == 200:
                 results = qres.json()
 
@@ -128,10 +176,13 @@ if st.button("Search") and query_text:
                     logger.info(f"{len(ranked_matches)} ranked matches returned for query.")
                     for match in ranked_matches:
                         meta = match.get("metadata", {})
-                        st.markdown(
-                            f"**📄 {meta.get('doc_name', 'Unknown')} — Page {meta.get('page', '?')} | Paragraph {meta.get('paragraph', '?')}**"
-                        )
-                        st.markdown(f"**🔢 Similarity Score:** `{match.get('similarity', '?')}`")
+                        doc_name = meta.get('doc_name', 'Unknown')
+                        page = meta.get('page', '?')
+                        para = meta.get('paragraph', '?')
+                        sim = match.get('similarity', '?')
+
+                        st.markdown(f"**📄 <span style='color:#2271b1;font-weight:bold'>{doc_name}</span> — Page {page}, Paragraph {para}**", unsafe_allow_html=True)
+                        st.markdown(f"**🔢 Similarity Score:** `{sim}`")
                         st.write(match["text"])
                         st.markdown("---")
                 else:
@@ -143,3 +194,11 @@ if st.button("Search") and query_text:
         except Exception as e:
             logger.exception(f"Query request failed: {e}")
             st.error(f"❌ Request failed: {e}")
+
+# ───────────────────────────────
+# 🕘 Query History Section
+# ───────────────────────────────
+if query_history:
+    with st.expander("🕘 Query History (Last 10)"):
+        for q, ts in query_history:
+            st.markdown(f"- **{q}** <br/><span style='font-size: 0.8em; color: gray'>🕓 {ts}</span>", unsafe_allow_html=True)
