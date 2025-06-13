@@ -48,13 +48,18 @@ class KenyaLawWebCrawler:
     def save_index_if_needed(self):
         with self.index_lock:
             self.saved_count += 1
+            tqdm.write(f"💾 save_index_if_needed() called, count = {self.saved_count}")
             if self.saved_count % 25 == 0:
+                tqdm.write("💾 Saving index.json...")
                 self.write_index_file()
 
     def write_index_file(self):
-        with open(self.INDEX_JSON, "w", encoding="utf-8") as f:
-            json.dump(self.index, f, indent=2)
-        tqdm.write(f"💾 index.json saved after {self.saved_count} files.")
+        try:
+            with open(self.INDEX_JSON, "w", encoding="utf-8") as f:
+                json.dump(self.index, f, indent=2)
+            tqdm.write(f"💾 index.json written successfully with {len(self.index)} entries.")
+        except Exception as e:
+            tqdm.write(f"❌ Failed to write index.json: {e}")
 
     def setup_browser(self):
         options = Options()
@@ -76,6 +81,7 @@ class KenyaLawWebCrawler:
 
     def load_existing_index(self):
         if os.path.exists(self.INDEX_JSON):
+            tqdm.write(f"📂 index.json found at: {self.INDEX_JSON}")
             try:
                 with open(self.INDEX_JSON, "r", encoding="utf-8") as f:
                     existing = json.load(f)
@@ -85,9 +91,11 @@ class KenyaLawWebCrawler:
                         elif entry["type"] == "akn":
                             self.downloaded_files.add(entry.get("file_html", ""))
                         self.index.append(entry)
-                tqdm.write(f"📂 Loaded {len(self.downloaded_files)} previously downloaded files from index.json")
+                tqdm.write(f"📂 Loaded {len(existing)} entries. {len(self.downloaded_files)} files marked as downloaded.")
             except Exception as e:
                 tqdm.write(f"⚠️ Could not read or parse index.json: {e}")
+        else:
+            tqdm.write("📁 No existing index.json found. Starting fresh.")
 
     def sanitize_filename(self, text):
         text = re.sub(r"[^\w\-]+", "_", text)
