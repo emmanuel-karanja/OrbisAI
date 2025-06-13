@@ -7,7 +7,7 @@ from logger import setup_logger
 logger = setup_logger("streamlit-app")
 
 st.set_page_config(page_title="OrbisAI RAG System", layout="centered")
-st.title("📄 OrbisAI Document Uploader + Query Interface")
+st.title("📄 OrbisAI Cicero")
 
 # ───────────────────────────────
 # 📤 Sidebar: Upload Document
