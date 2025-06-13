@@ -208,4 +208,4 @@ if __name__ == "__main__":
         download_root="C:\\Users\\ZBOOK\\Downloads\\kenya_laws",
         max_workers=5
     )
-    crawler.run(download_root="c:\\Users\\ZBOOK\\Downloads\\kenya_laws")
+    crawler.run()
