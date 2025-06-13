@@ -1,0 +1,1158 @@
+<html xmlns="http://www.w3.org/1999/xhtml"><head><!-- BeginRenderedBy(lexpage:get-head()) -->
+        <title>The Laws of Kenya</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <script src="scripts/ga.js"></script>
+        <script src="jquery/jquery.min.js"></script>
+        <script src="scripts/common.js"></script>
+        <script src="scripts/capsearch.js"></script>
+        <script src="scripts/actsearch.js"></script>
+        <script src="scripts/ftsearch.js"></script>
+        <script src="scripts/toc.js"></script>
+        <script src="scripts/jquery.watermark.min.js"></script>
+        <link rel="stylesheet" type="text/css" href="yui/skins/sam/skin.css">
+        <link type="text/css" rel="stylesheet" href="yui/autocomplete/assets/skins/sam/autocomplete.css">
+        <link type="text/css" rel="stylesheet" href="yui/tabview/assets/skins/sam/tabview.css">
+        <link type="text/css" rel="stylesheet" href="yui/container/assets/skins/sam/container.css">
+        <link type="text/css" rel="stylesheet" href="yui/treeview/assets/skins/sam/treeview.css">
+        <link type="text/css" rel="stylesheet" href="yui/calendar/assets/skins/sam/calendar.css">
+        <script src="yui/yahoo-dom-event/yahoo-dom-event.js"></script>
+        <script src="yui/element/element-min.js"></script>
+        <script src="yui/datasource/datasource-min.js"></script>
+        <script src="yui/get/get-min.js"></script>
+        <script src="yui/connection/connection-min.js"></script>
+        <script src="yui/calendar/calendar-min.js"></script>
+        <script src="yui/json/json-min.js"></script>
+        <script src="yui/treeview/treeview-min.js"></script>
+        <script src="yui/autocomplete/autocomplete-min.js"></script>
+        <script src="yui/tabview/tabview-min.js"></script>
+        <script src="yui/container/container-min.js"></script>
+        <script type="text/javascript">
+       /** BeginRenderedBy(lexcustom:get-root-js()) **/
+        /** define an object namespace **/
+        YAHOO.namespace("kenyalex.bungeni");
+        var Dom = YAHOO.util.Dom,
+                Event = YAHOO.util.Event,
+                log = YAHOO.log;
+        YAHOO.kenyalex.bungeni.COLLECTION = "/db/kenyalex";     		
+         /** EndRenderedBy(lexcustom:get-root-js()) **/          
+        </script>
+        <link rel="stylesheet" type="text/css" href="css/custom.css">
+        <script type="text/javascript">
+       /** BeginRenderedBy(lexcustom:get-custom-js()) **/
+         /** render tab **/
+        YAHOO.kenyalex.bungeni.Tabs = new YAHOO.widget.TabView("tabcontent");
+ 
+        function escapeQuery(query) {
+        	return encodeURIComponent(query);
+        }
+        
+        
+        /** put all the onload init stuff here **/
+        function init() {
+
+			adModulesShow();
+
+			/* Load the content tab first */
+			$( '#tabcontent' ).children()[0].children[3].click();
+
+        }
+        /** Event listeners **/
+        YAHOO.util.Event.addListener(window, "load", init);
+        /** EndRenderedBy(lexcustom:get-custom-js()) **/
+       </script>
+        <script src="scripts/lex.js" type="text/javascript"></script>
+        <script>
+
+			$(document).ready(function (){
+				$("#ads-searchfor").watermark("Search by Act Name");
+				$("#icapsearch").watermark("Search by Cap Number, eg. 4A");
+				$("#txtFTSearch").watermark("Search text within the acts");
+				
+				setEnterKeyPress();
+
+
+				//$( '#tab-help' ).css({ height:'800px' });
+
+				$( '#tab-help' ).resize();
+
+
+
+			});
+
+			function setEnterKeyPress(){
+				$("#ads-searchfor").keyup(function (e) {
+					if (e.which == 13) {// enter 
+						actSearch();
+					}});
+				$("#icapsearch").keyup(function (e) {
+					if (e.which == 13) {// enter 
+						search();
+					}});
+				$("#txtFTSearch").keyup(function (e) {
+					if (e.which == 13) {// enter 
+						ftSearch();
+					}});
+			}</script><!-- EndRenderedBy(lexpage:get-head()) -->
+    </head>
+    <body class="yui-skin-sam">
+        <div id="header-full">
+            <div id="header">
+                <img class="logo" src="images/logo.png">
+                <div style="float: right;">
+                    <table class="top-right">
+                        <tbody><tr>
+                            <td>
+                                <a href="https://kenyalaw.org/kl/index.php?id=115">About Us</a> | </td>
+                            <td>
+                                <a href="https://kenyalaw.org/kl/index.php?id=157">Judicial Profiles</a> | </td>
+                            <td>
+                                <a href="https://kenyalaw.org/kl/index.php?id=1990">Product Catalogue</a> | </td>
+                            <td>
+                                <a href="https://kenyalaw.org/kl/index.php?id=2003">Careers</a> | </td>
+                            <td>
+                                <a href="https://kenyalaw.org/kl/index.php?id=3158">Contact Us</a>
+                            </td>
+                            <td>
+                                <a href="https://kenyalaw.org/kl/index.php?id=3386">Sitemap</a> | </td><!-- now on the same line </tr>
+						<tr> -->
+                            <td colspan="6" align="right">
+                                <form style="margin:5px; margin-right: 30px; padding:0px; float: right;" id="searchform" target="_blank" method="post" action="#">
+                                    <table height="14" cellspacing="0" cellpadding="0" border="0">
+                                        <tbody>
+                                            <tr>
+                                                <td align="left">
+                                                    <input class="unisearch" type="text" style="height:20; width:185; font-size:11" name="tx_indexedsearch[sword]">
+                                                </td>
+                                                <td>
+                                                    <input class="sb" type="submit" value="" placeholder="Search..." style="border:1;  margin-left: 3px;" name="tx_indexedsearch[submit_button]">
+                                                    <input type="hidden" value="0" name="tx_indexedsearch[_sections]">
+                                                    <input type="hidden" value="0" name="tx_indexedsearch[pointer]">
+                                                    <input type="hidden" value="0" name="tx_indexedsearch[ext]">
+                                                    <input type="hidden" value="0" name="tx_indexedsearch[lang]">
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </form>
+                            </td>
+                        </tr>
+                    </tbody></table>
+                </div>
+                <div id="menu">
+                    <ul id="main-menu">
+                        <li>
+                            <a href="https://www.kenyalaw.org/">Home</a>
+                        </li>
+                        <li>
+                            <a href="http://www.kenyalaw.org/lex//index.xql">Laws of Kenya</a>
+                            <div class="menu_dropdown_block">
+                                <ul class="menu_submenu_block">
+                                    <li>
+                                        <a href="https://kenyalaw.org/kl/index.php?id=398">The Constitution of Kenya</a>
+                                    </li>
+                                    <li>
+                                        <a href="http://www.kenyalaw.org:8181/exist/kenyalex/index.xql">Laws of Kenya Database</a>
+                                    </li>
+                                    <li>
+                                        <a href="https://kenyalaw.org/kl/index.php?id=12031">Twenty-Fourth Annual Supplement</a>
+                                    </li>
+                                    <li>
+                                        <a href="https://kenyalaw.org/kl/index.php?id=507">Recent Legislation</a>
+                                    </li>
+                                    <li>
+                                        <a href="https://kenyalaw.org/kl/index.php?id=3401">Legal Notices</a>
+                                    </li>
+                                    <li>
+                                        <a href="https://kenyalaw.org/kl/index.php?id=516">Amendment Acts</a>
+                                    </li>
+                                    <li>
+                                        <a href="https://kenyalaw.org/kl/index.php?id=3406">Bills</a>
+                                    </li>
+                                    <li>
+                                        <a href="https://kenyalaw.org/kl/index.php?id=3978">County Legislative Information</a>
+                                    </li>
+                                    <li>
+                                        <a href="https://kenyalaw.org/treaties/">Treaties Database</a>
+                                    </li>
+                                    <li>
+                                        <a href="https://kenyalaw.org/kl/index.php?id=843">EAC Legislation</a>
+                                    </li>
+                                    <li>
+                                        <a href="https://kenyalaw.org/kl/index.php?id=5571">Repealed Legislation</a>
+                                    </li>
+                                    <li>
+                                        <a href="https://kenyalaw.org/kl/index.php?id=3979">Laws on Devolution</a>
+                                    </li>
+                                    <li>
+                                        <a href="https://kenyalaw.org/kl/index.php?id=842">Practice Notes</a>
+                                    </li>
+                                    <li>
+                                        <a href="https://kenyalaw.org/kl/index.php?id=844">FAQ's</a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </li>
+                        <li>
+                            <a href="https://kenyalaw.org/caselaw">Case Search</a>
+                        </li>
+                        <li>
+                            <a href="https://www.kenyalaw.org/kl/index.php?id=6847">Tribunals</a>
+                        </li>
+                        <li>
+                            <a href="https://kenyalaw.org/kl/index.php?id=852">Parliament</a>
+                            <div class="menu_dropdown_block">
+                                <ul class="menu_submenu_block">
+                                    <li>
+                                        <a href="https://kenyalaw.org/kl/index.php?id=852">Search Handsard Archive</a>
+                                    </li>
+                                    <li>
+                                        <a href="https://kenyalaw.org/kl/index.php?id=850">Press Release</a>
+                                    </li>
+                                    <li>
+                                        <a href="https://kenyalaw.org/kl/index.php?id=400">Laws of Kenya</a>
+                                    </li>
+                                    <li>
+                                        <a href="https://kenyalaw.org/kl/index.php?id=3406">Bills</a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </li>
+                        <li>
+                            <a href="https://kenyalaw.org/kl/index.php?id=1558">Cause List</a>
+                            <div class="menu_dropdown_block">
+                                <ul class="menu_submenu_block">
+                                    <li>
+                                        <a href="https://kenyalaw.org/kl/index.php?id=3417">Supreme Court</a>
+                                    </li>
+                                    <li>
+                                        <a href="https://kenyalaw.org/kl/index.php?id=1606">Court of Appeal</a>
+                                    </li>
+                                    <li>
+                                        <a href="https://kenyalaw.org/kl/index.php?id=2037">High Court of Kenya</a>
+                                    </li>
+                                    <li>
+                                        <a href="https://kenyalaw.org/kl/index.php?id=3605">Employment and Labour Relations Court</a>
+                                    </li>
+                                    <li>
+                                        <a href="https://www.kenyalaw.org/kl/index.php?id=6891">Environment and Land Court</a>
+                                    </li>
+                                    <li>
+                                        <a href="https://kenyalaw.org/kl/index.php?id=1648">Chief Magistrates Court</a>
+                                    </li>
+                                    <li>
+                                        <a href="https://www.kenyalaw.org/kl/index.php?id=5340">Kadhis' Court</a>
+                                    </li>
+                                    <li>
+                                        <a href="https://kenyalaw.org/kl/index.php?id=1568">Licensed Process Servers</a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </li>
+                        <li>
+                            <a href="https://kenyalaw.org/kenya_gazette/">Kenya Gazette</a>
+                            <div class="menu_dropdown_block">
+                                <ul class="menu_submenu_block">
+                                    <li>
+                                        <a href="https://kenyalaw.org/kenya_gazette/">Kenya Gazette Online Archive </a>
+                                    </li>
+                                    <li>
+                                        <a href="https://www.kenyalaw.org/kl/index.php?id=2754">Kenya Gazette Selected Notices</a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </li>
+                        <li>
+                            <a href="https://kenyalaw.org/kl/index.php?id=1884">Publications</a>
+                            <div class="menu_dropdown_block">
+                                <ul class="menu_submenu_block">
+                                    <li>
+                                        <a href="https://kenyalaw.org/kl/index.php?id=1884"> Newsletter</a>
+                                    </li>
+                                    <li>
+                                        <a href="https://kenyalaw.org/kl/index.php?id=1886"> Kenya Law Journal</a>
+                                    </li>
+                                    <li>
+                                        <a href="https://kenyalaw.org/kl/index.php?id=1879"> Bench Bulletin</a>
+                                    </li>
+                                    <li>
+                                        <a href="https://kenyalaw.org/kl/index.php?id=3329"> Annual Reports</a>
+                                    </li>
+                                    <li>
+                                        <a href="https://kenyalaw.org/kl/index.php?id=3548"> Newsletter Archives</a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </li>
+                        <li>
+                            <a href="https://kenyalaw.org/kenyalawblog/">Blog</a>
+                        </li>
+                        <li>
+                            <a href="https://kenyalaw.org/kl/index.php?id=3479">Election Petitions</a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="banner">
+                    <h2 style="
+					    color: #fff;  font-size: 42px;  
+					    padding-top: 55px;  font-family: 'Roboto', sans-serif;
+					    font-weight: bold;
+					    padding-left: 50px;
+					">Laws of Kenya</h2>
+                    <img src="images/pillars.png">
+                </div>
+                <div class="bc-section"><!-- <p style="
+					    padding-top: 9px;
+					    padding-left: 70px;">
+            <strong style="font-weight:bold;">You're here:</strong> Home / Laws of Kenya</p> --></div>
+            </div>
+        </div>
+        <table>
+            <thead></thead>
+            <tbody>
+                <tr>
+                    <td>
+                        <div id="content" style="margin-top:200px;">
+                            <table width="100%">
+                                <tbody><tr>
+                                    <td class="index-heading" colspan="2"></td>
+                                </tr>
+                                <tr>
+                                    <td valign="top" class="lhs">
+                                        <div id="other" style="padding-right: 20px;">
+                                            <table style=" margin-top: 10px;" cellspacing="4" class="other-resources">
+                                                <tbody><tr>
+                                                    <td class="ot-head" style=" font-weight: bold; border-bottom: 1px solid #EAEAEA; padding: 5px;">OTHER RESOURCES</td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="border-bottom: 1px solid #EAEAEA; ">
+                                                        <a href="https://kenyalaw.org/kl/index.php?id=12031" style="text-decoration: none;" target="_blank">Twenty-Fourth Annual Supplement</a>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="border-bottom: 1px solid #EAEAEA; ">
+                                                        <a href="https://kenyalaw.org/kl/index.php?id=5995" style="text-decoration: none;" target="_blank">Recent Legislation</a>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="border-bottom: 1px solid #EAEAEA; ">
+                                                        <a href="https://kenyalaw.org/kl/index.php?id=843" style="text-decoration: none;" target="_blank">EAC</a>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="border-bottom: 1px solid #EAEAEA;">
+                                                        <a href="https://www.kenyalaw.org/treaties/" style="  text-decoration: none;" target="_blank">Treaties</a>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="border-bottom: 1px solid #EAEAEA; ">
+                                                        <a href="https://kenyalaw.org/kl/index.php?id=3406" style="text-decoration: none;" target="_blank">Bills</a>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="border-bottom: 1px solid #EAEAEA; ">
+                                                        <a href="https://kenyalaw.org/kl/index.php?id=3401" style=" text-decoration: none;" target="_blank">Legal Notices</a>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="border-bottom: 1px solid #EAEAEA; ">
+                                                        <a href="https://kenyalaw.org/kl/index.php?id=842" style=" text-decoration: none;" target="_blank">Practice Notes</a>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="border-bottom: 1px solid #EAEAEA; ">
+                                                        <a href="https://kenyalaw.org/kl/index.php?id=516" style=" text-decoration: none;" target="_blank">Amendment Acts</a>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="border-bottom: 1px solid #EAEAEA; ">
+                                                        <a href="https://kenyalaw.org/kl/index.php?id=5571" style="  text-decoration: none;" target="_blank">Repealed statutes</a>
+                                                    </td>
+                                                </tr>
+                                            </tbody></table>
+                                        </div>
+                                        <div id="filter" style="margin-top: 10px; display: none;"></div>
+                                    </td>
+                                    <td valign="top" style="height: auto;" id="ffix"><!-- <div style="font-weight:bold; color:#FF0000; font-size:14px" align="center">IMPORTANT NOTICE</div>
+			<div style="height:10px"></div>
+            <div style="font-weight:bold; font-size:12px" align="center">NEW CHAPTER NUMBERS SHALL COME INTO EFFECT UPON PUBLICATION OF A "REVISION OF LAWS ORDER" as shown <a href="https://kenyalaw.org/kl/index.php?id=3504" style="text-decoration: none;" target="_blank"><font style="font-weight:bold">here</font></a>. </div> -->
+                                        <div style="height:12px"></div>
+                                        <div id="tabcontent" class="yui-navset yui-navset-top"><!-- tab headings -->
+                                            <ul class="yui-nav">
+                                                
+                                                
+                                                
+                                                
+                                                
+                                                
+                                            <li>
+                                                    <a href="#tab3">
+                                                        <em>Act Name</em>
+                                                    </a>
+                                                </li><li>
+                                                    <a href="#tab2">
+                                                        <em>Cap/Act Number</em>
+                                                    </a>
+                                                </li><li>
+                                                    <a href="#tabFT">
+                                                        <em>Full Text Search</em>
+                                                    </a>
+                                                </li><li class="selected" title="active">
+                                                    <a href="#tabTOC">
+                                                        <em>Table of Contents</em>
+                                                    </a>
+                                                </li><li>
+                                                    <a href="#tabHelp">
+                                                        <em>Help</em>
+                                                    </a>
+                                                </li><li>
+                                                    <a href="#tabCredits">
+                                                        <em>Credits</em>
+                                                    </a>
+                                                </li></ul>
+                                            <br>
+                                            <br>
+                                            <b>You can visit the new Laws of Kenya page <a href="https://new.kenyalaw.org/legislation/" target="_blank">here.</a>
+                                            </b>
+                                            <br>
+                                            <br>
+                                            <br>
+                                            <b>
+                                                <u>NOTICE<br>
+                                                    <br>1. <a href="https://kenyalaw.org/kl/index.php?id=12031" target="_blank">Twenty-Fourth Annual Supplement</a>
+                                                </u>
+                                            </b>
+                                            <br>
+                                            <br>The Twenty-Fourth Annual Supplement was gazetted as Legal Notice No. 221 of 2023 on 22nd December, 2023 and commenced on the 30th of January, 2024. The National Council for Law Reporting (Kenya Law) is in the process of uploading the contents of the 24th Annual Supplement on this database. The statutes listed in this database (herein below) include the revised editions of the 24th Annual Supplement with subsequent amendments to the statute, where amended in the year 2023.<br>
+                                            <br>
+                                            <b>
+                                                <u>2. <a href="https://www.kenyalaw.org/kl/index.php?id=8662" style="text-decoration: none;" target="_blank">
+                                                        <font style="font-weight:bold">Sections declared to be unconstitutional</font>
+                                                    </a>
+                                                </u>
+                                            </b>
+                                            <br>
+                                            <br> Courts interpret the law during their day to day administration of justice. During this interpretive process, Kenyan courts have encountered sections of legislation which are contrary to the letter and spirit of the Constitution of Kenya, 2010 therefore presenting a constitutional conflict which has resulted in a number of sections of the law declared to be unconstitutional. Kenya Law has compiled these decisions from the year 2011 to date and will continuously update this information on its website. In addition to this, these sections will be highlighted for notification purposes in the particular statutes in the Laws of Kenya database.<br>
+                                            <br>
+                                            <b>
+                                                <u>3. The following statutes are currently not updated in the database hereinbelow due to website migration. The updated statutes are however available as pdf copies by clicking the links below:</u>
+                                            </b>
+                                            <br>
+                                            <br> Click <a href="https://kenyalaw.org/kl/fileadmin/pdfdownloads/Tourism_Act.pdf" style="text-decoration: none;" target="_blank">here</a> to download the PDF version of the Tourism Act (Cap. 381)<br>
+                                            <br> Click <a href="https://kenyalaw.org/kl/fileadmin/pdfdownloads/Alcoholic_Drinks_Control_Act(Cap.121).pdf" style="text-decoration: none;" target="_blank">here</a> to download the PDF version of the Alcoholic Drinks Control Act (Cap. 121)<br>
+                                            <br> Click <a href="https://kenyalaw.org/kl/fileadmin/pdfdownloads/Assumption_of_the_Office_of_President_Act(Cap.6C).pdf" style="text-decoration: none;" target="_blank">here</a> to download the PDF version of the Assumption of the Office of the President (Cap. 6C)<br>
+                                            <br> Click <a href="https://kenyalaw.org/kl/fileadmin/pdfdownloads/Companies_Act(Cap.486).pdf" style="text-decoration: none;" target="_blank">here</a> to download the PDF version of the Companies Act (Cap. 486)<br>
+                                            <br> Click <a href="https://kenyalaw.org/kl/fileadmin/pdfdownloads/Excise_Duty_Act(Cap.472).pdf" style="text-decoration: none;" target="_blank">here</a> to download the PDF version of the Excise Duty Act (Cap. 472)<br>
+                                            <br> Click <a href="https://kenyalaw.org/kl/fileadmin/pdfdownloads/Income_Tax_Act(Cap.470).pdf" style="text-decoration: none;" target="_blank">here</a> to download the PDF version of the Income Tax Act (Cap. 470)<br>
+                                            <br>Click <a href="https://kenyalaw.org/kl/fileadmin/pdfdownloads/CAP_7C_INDEPENDENT_ELECTORAL_AND_BOUNDARIES_COMMISSION_ACT.pdf" style="text-decoration: none;" target="_blank">here</a> to download the PDF version of the Independent Electoral and Boundaries Commission Act (Cap. 7C)<br>
+                                            <br> Click <a href="https://kenyalaw.org/kl/fileadmin/pdfdownloads/Kenya_Revenue_Authority_Act(CAP.469).pdf" style="text-decoration: none;" target="_blank">here</a> to download the PDF version of the Kenya Revenue Authority (Cap. 469)<br>
+                                            <br> Click <a href="https://kenyalaw.org/kl/fileadmin/pdfdownloads/National_Government_Co-ordination_Act(Cap.127).pdf" style="text-decoration: none;" target="_blank">here</a> to download the PDF version of the National Government Co-ordination Act (Cap. 127)<br>
+                                            <br>Click <a href="https://kenyalaw.org/kl/fileadmin/pdfdownloads/Cap_412A_Public_Finance_Management_Act.pdf" style="text-decoration: none;" target="_blank">here</a> to download the PDF version of the Public Finance Management Act (Cap. 412A)<br>
+                                            <br> Click <a href="https://kenyalaw.org/kl/fileadmin/pdfdownloads/Retirement_Benefits(Deputy_President_and_Designated_State_Officers)Act(Cap.197B).pdf" style="text-decoration: none;" target="_blank">here</a> to download the PDF version of the The Retirement Benefits (Deputy President And Designated State Officers) Act (Cap. 197B)
+<br>
+                                            <br> Click <a href="https://kenyalaw.org/kl/fileadmin/pdfdownloads/Tax_Procedures_Act(Cap.469B).pdf" style="text-decoration: none;" target="_blank">here</a> to download the PDF version of the Tax Procedures Act (Cap. 469B)<br>
+                                            <br> Click <a href="https://kenyalaw.org/kl/fileadmin/pdfdownloads/Unclaimed_Financial_Assets_Act(Cap.494).pdf" style="text-decoration: none;" target="_blank">here</a> to download the PDF version of the Unclaimed Financial Assets Act (Cap. 494)<br>
+                                            <br> Click <a href="https://kenyalaw.org/kl/fileadmin/pdfdownloads/Value_Added_Tax_Act(Cap.476).pdf" style="text-decoration: none;" target="_blank">here</a> to download the PDF version of the Value Added tax Act (Cap. 476).
+															  
+				   <!-- tab body -->
+                                            <div class="yui-content" style="padding-top: 20px;">
+                                                <div id="tab-ad-search" class="yui-hidden">
+                                                    <div id="ads-search" style="width: 800px;">
+                                                        <input type="text" id="ads-searchfor" placeholder="Search by Act Name">
+                                                        <button id="ads-search-bn" onclick="actSearch()">Search</button>
+                                                    </div>
+                                                    <div>
+                                                        <br>
+                                                        <br>
+                                                        <br>
+                                                    </div><!--<div>
+							<b><u>NOTICE: Sections declared to be unconstitutional</u> <br/><br/> Courts interpret the law during their day to day administration of justice. During this interpretive process, Kenyan courts have encountered sections of legislation which are contrary to the letter and spirit of the constitution therefore presenting a constitutional conflict which has resulted in a number of sections of the law declared to be unconstitutional. Kenya Law has compiled these decisions from the year 2011 to date and will continuously update this information on its website. In addition to this, these sections will be highlighted for notification purposes in the particular statutes in the Laws of Kenya database.</b>
+							</div>	-->
+                                                </div>
+                                                <div id="tab-cap-search" class="yui-hidden">
+                                                    <div id="cap-search" style="width: 800px;">
+                                                        <input id="icapsearch" type="text" placeholder="Search by Cap Number, eg. 4A">
+                                                        <button onclick="search();" id="btnCapNoSearch">Search</button>
+                                                    </div>
+                                                </div>
+                                                <div id="tab-ft-search" class="yui-hidden">
+                                                    <div id="ft-search" style="width: 800px;">
+                                                        <input id="txtFTSearch" type="text" placeholder="Search text within the acts">
+                                                        <button onclick="ftSearch();" id="btnFTSearch">Search</button>
+                                                    </div>
+                                                </div>
+                                                <div id="tab-toc" class="">
+                                                    <div id="toc-header"><a style="font-size:12pt; color:#8C0000; margin: 3px;" href="#A"><b>A</b></a><a style="font-size:12pt; color:#8C0000; margin: 3px;" href="#B"><b>B</b></a><a style="font-size:12pt; color:#8C0000; margin: 3px;" href="#C"><b>C</b></a><a style="font-size:12pt; color:#8C0000; margin: 3px;" href="#D"><b>D</b></a><a style="font-size:12pt; color:#8C0000; margin: 3px;" href="#E"><b>E</b></a><a style="font-size:12pt; color:#8C0000; margin: 3px;" href="#F"><b>F</b></a><a style="font-size:12pt; color:#8C0000; margin: 3px;" href="#G"><b>G</b></a><a style="font-size:12pt; color:#8C0000; margin: 3px;" href="#H"><b>H</b></a><a style="font-size:12pt; color:#8C0000; margin: 3px;" href="#I"><b>I</b></a><a style="font-size:12pt; color:#8C0000; margin: 3px;" href="#J"><b>J</b></a><a style="font-size:12pt; color:#8C0000; margin: 3px;" href="#K"><b>K</b></a><a style="font-size:12pt; color:#8C0000; margin: 3px;" href="#L"><b>L</b></a><a style="font-size:12pt; color:#8C0000; margin: 3px;" href="#M"><b>M</b></a><a style="font-size:12pt; color:#8C0000; margin: 3px;" href="#N"><b>N</b></a><a style="font-size:12pt; color:#8C0000; margin: 3px;" href="#O"><b>O</b></a><a style="font-size:12pt; color:#8C0000; margin: 3px;" href="#P"><b>P</b></a><a style="font-size:12pt; color:#8C0000; margin: 3px;" href="#R"><b>R</b></a><a style="font-size:12pt; color:#8C0000; margin: 3px;" href="#S"><b>S</b></a><a style="font-size:12pt; color:#8C0000; margin: 3px;" href="#T"><b>T</b></a><a style="font-size:12pt; color:#8C0000; margin: 3px;" href="#U"><b>U</b></a><a style="font-size:12pt; color:#8C0000; margin: 3px;" href="#V"><b>V</b></a><a style="font-size:12pt; color:#8C0000; margin: 3px;" href="#W"><b>W</b></a></div>
+                                                    <div id="toc-listing" loaded="true" style="width: 800px; margin-top: 10px;"><div style="font-size:20pt;color:#8C0000;" id="A"><b>A</b><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 7M" target="_blank">ACCESS TO INFORMATION (CAP. 7M)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 531" target="_blank">ACCOUNTANTS (CAP. 531)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 16" target="_blank">ADVOCATES (CAP. 16)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=No. 2 of 2024" target="_blank">AFFORDABLE HOUSING (No. 2 of 2024)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 492" target="_blank">AFRICAN DEVELOPMENT BANK (CAP. 492)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 487B" target="_blank">AFRICAN RE-INSURANCE CORPORATION (MANDATORY RE-INSURANCE CESSIONS) (CAP. 487B)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 33" target="_blank">AGE OF MAJORITY (CAP. 33)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 444" target="_blank">AGRICULTURAL DEVELOPMENT CORPORATION (CAP. 444)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 323" target="_blank">AGRICULTURAL FINANCE CORPORATION (CAP. 323)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 317" target="_blank">AGRICULTURE AND FOOD AUTHORITY (CAP. 317)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 475" target="_blank">AIR PASSENGER SERVICE CHARGE (CAP. 475)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 121" target="_blank">ALCOHOLIC DRINKS CONTROL (CAP. 121)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 249" target="_blank">ANATOMY (CAP. 249)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 364" target="_blank">ANIMAL DISEASES (CAP. 364)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 361" target="_blank">ANIMAL TECHNICIANS (CAP. 361)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 79B" target="_blank">ANTI-BRIBERY (CAP. 79B)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 65" target="_blank">ANTI-CORRUPTION AND ECONOMIC CRIMES (CAP. 65)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 510" target="_blank">ANTI-COUNTERFEIT (CAP. 510)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 245B" target="_blank">ANTI-DOPING (CAP. 245B)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 9" target="_blank">APPELLATE JURISDICTION (CAP. 9)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 49" target="_blank">ARBITRATION (CAP. 49)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 525" target="_blank">ARCHITECTS AND QUANTITY SURVEYORS (CAP. 525)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 202" target="_blank">ARMED FORCES (OUT OF BOUNDS AREAS) (CAP. 202)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 194" target="_blank">ASIAN OFFICERS’ FAMILY PENSIONS (CAP. 194)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 265A" target="_blank">ASSUMPTION OF THE OFFICE OF GOVERNOR (CAP. 265A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 6C" target="_blank">ASSUMPTION OF THE OFFICE OF PRESIDENT (CAP. 6C)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 526" target="_blank">AUCTIONEERS (CAP. 526)</a></div></div></div><a href="#" style="font-size:10pt; color:#8C0000; float: right;">Top</a><div style="font-size:20pt;color:#8C0000;" id="B"><b>B</b><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 488C" target="_blank">BANK OF BARODA (KENYA) LIMITED (CAP. 488C)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 488" target="_blank">BANKING (CAP. 488)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 488B" target="_blank">BARCLAYS BANK OF KENYA LIMITED (CAP. 488B)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 211" target="_blank">BASIC EDUCATION (CAP. 211)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 131" target="_blank">BETTING, LOTTERIES AND GAMING (CAP. 131)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 27" target="_blank">BILLS OF EXCHANGE (CAP. 27)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 320" target="_blank">BIOSAFETY (CAP. 320)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 149" target="_blank">BIRTHS AND DEATHS REGISTRATION (CAP. 149)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 111" target="_blank">BOOKS AND NEWSPAPERS (CAP. 111)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 92" target="_blank">BORSTAL INSTITUTIONS (CAP. 92)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 357" target="_blank">BRANDING OF STOCK (CAP. 357)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 262" target="_blank">BREAST MILK SUBSTITUTES (REGULATION AND CONTROL) (CAP. 262)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 464" target="_blank">BRETTON WOODS AGREEMENTS (CAP. 464)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 515" target="_blank">BRITISH STANDARD PORTLAND CEMENT COMPANY LIMITED (BAMBURI FACTORY) (CAP. 515)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 527" target="_blank">BROKERS (CAP. 527)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 489" target="_blank">BUILDING SOCIETIES (CAP. 489)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 541" target="_blank">BUILDING SURVEYORS (CAP. 541)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 348" target="_blank">BUKURA AGRICULTURAL COLLEGE (CAP. 348)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 499B" target="_blank">BUSINESS REGISTRATION SERVICE (CAP. 499B)</a></div></div></div><a href="#" style="font-size:10pt; color:#8C0000; float: right;">Top</a><div style="font-size:20pt;color:#8C0000;" id="C"><b>C</b><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 101" target="_blank">CABINET SECRETARY TO THE TREASURY (INCORPORATION) (CAP. 101)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=No. 15 of 2012" target="_blank">CANCER PREVENTION AND CONTROL (No. 15 of 2012)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 485A" target="_blank">CAPITAL MARKETS (CAP. 485A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 394A" target="_blank">CARRIAGE BY AIR (CAP. 394A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 392" target="_blank">CARRIAGE OF GOODS BY SEA (CAP. 392)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 358" target="_blank">CATTLE CLEANSING (CAP. 358)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 491" target="_blank">CENTRAL BANK OF KENYA (CAP. 491)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 485C" target="_blank">CENTRAL DEPOSITORIES (CAP. 485C)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 534" target="_blank">CERTIFIED PUBLIC SECRETARIES OF KENYA (CAP. 534)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 35" target="_blank">CHEQUES (CAP. 35)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 128" target="_blank">CHIEFS' (CAP. 128)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 141" target="_blank">CHILDREN (CAP. 141)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 394" target="_blank">CIVIL AVIATION (CAP. 394)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 21" target="_blank">CIVIL PROCEDURE (CAP. 21)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 387A" target="_blank">CLIMATE CHANGE (CAP. 387A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 253E" target="_blank">CLINICAL OFFICERS (TRAINING, REGISTRATION AND LICENSING) (CAP. 253E)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 490A" target="_blank">CO-OPERATIVE COLLEGE OF KENYA (CAP. 490A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 490" target="_blank">CO-OPERATIVE SOCIETIES (CAP. 490)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 449" target="_blank">COAST DEVELOPMENT AUTHORITY (CAP. 449)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 98" target="_blank">COLLEGE OF ARMS (CAP. 98)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=No. 9 of 2010" target="_blank">COMMISSION FOR THE IMPLEMENTATION OF THE CONSTITUTION (No. 9 of 2010)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 7J" target="_blank">COMMISSION ON ADMINISTRATIVE JUSTICE (CAP. 7J)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 428" target="_blank">COMMISSION ON REVENUE ALLOCATION (CAP. 428)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 12" target="_blank">COMMISSIONERS OF ASSIZE (CAP. 12)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 102" target="_blank">COMMISSIONS OF INQUIRY (CAP. 102)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 108A" target="_blank">COMMUNITY GROUPS REGISTRATION (CAP. 108A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 287" target="_blank">COMMUNITY LAND (CAP. 287)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 93" target="_blank">COMMUNITY SERVICE ORDERS (CAP. 93)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 486" target="_blank">COMPANIES (CAP. 486)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 504" target="_blank">COMPETITION (CAP. 504)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 123" target="_blank">COMPOUNDING OF POTABLE SPIRITS (CAP. 123)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 79C" target="_blank">COMPUTER MISUSE AND CYBERCRIMES (CAP. 79C)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 488D" target="_blank">CONSOLIDATED BANK OF KENYA (CAP. 488D)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 414" target="_blank">CONSTITUENCIES DEVELOPMENT FUND (CAP. 414)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 423" target="_blank">CONSTITUTIONAL OFFICES (REMUNERATION) (CAP. 423)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 501" target="_blank">CONSUMER PROTECTION (CAP. 501)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 8F" target="_blank">CONTEMPT OF COURT (CAP. 8F)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 24" target="_blank">CONTRACTS IN RESTRAINT OF TRADE (CAP. 24)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 429" target="_blank">CONTROLLER OF BUDGET (CAP. 429)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 130" target="_blank">COPYRIGHT (CAP. 130)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 253C" target="_blank">COUNSELLORS AND PSYCHOLOGISTS (CAP. 253C)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 61" target="_blank">COUNTER-TRAFFICKING IN PERSONS (CAP. 61)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 265C" target="_blank">COUNTY ASSEMBLIES POWERS AND PRIVILEGES (CAP. 265C)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 265D" target="_blank">COUNTY ASSEMBLY SERVICES (CAP. 265D)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 265" target="_blank">COUNTY GOVERNMENTS (CAP. 265)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 189B" target="_blank">COUNTY GOVERNMENTS RETIREMENT SCHEME (CAP. 189B)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 276" target="_blank">COUNTY OUTDOOR ADVERTISING CONTROL (CAP. 276)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 9A" target="_blank">COURT OF APPEAL (ORGANIZATION AND ADMINISTRATION) (CAP. 9A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 75" target="_blank">CRIMINAL PROCEDURE CODE (CAP. 75)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 318" target="_blank">CROPS (CAP. 318)</a></div></div></div><a href="#" style="font-size:10pt; color:#8C0000; float: right;">Top</a><div style="font-size:20pt;color:#8C0000;" id="D"><b>D</b><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 336" target="_blank">DAIRY INDUSTRY (CAP. 336)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 411C" target="_blank">DATA PROTECTION (CAP. 411C)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 42" target="_blank">DEBTS (SUMMARY RECOVERY) (CAP. 42)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 54" target="_blank">DEEDS OF ARRANGEMENT (CAP. 54)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 36" target="_blank">DEFAMATION (CAP. 36)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=No. 15 of 2023" target="_blank">DIGITAL HEALTH (No. 15 of 2023)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 38" target="_blank">DISPOSAL OF UNCOLLECTED GOODS (CAP. 38)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 293" target="_blank">DISTRESS FOR RENT (CAP. 293)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 105" target="_blank">DISTRICTS AND PROVINCES (CAP. 105)</a></div></div></div><a href="#" style="font-size:10pt; color:#8C0000; float: right;">Top</a><div style="font-size:20pt;color:#8C0000;" id="E"><b>E</b><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 211B" target="_blank">EARLY CHILDHOOD EDUCATION (CAP. 211B)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 4" target="_blank">EAST AFRICAN COMMUNITY MEDIATION AGREEMENT (CAP. 4)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 493A" target="_blank">EAST AFRICAN DEVELOPMENT BANK (CAP. 493A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 4A" target="_blank">EASTERN AND SOUTHERN AFRICAN MANAGEMENT INSTITUTE (CAP. 4A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 7A" target="_blank">ELECTION CAMPAIGN FINANCING (CAP. 7A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 66" target="_blank">ELECTION OFFENCES (CAP. 66)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 7" target="_blank">ELECTIONS (CAP. 7)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 226" target="_blank">EMPLOYMENT (CAP. 226)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 8E" target="_blank">EMPLOYMENT AND LABOUR RELATIONS COURT (CAP. 8E)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 314" target="_blank">ENERGY (CAP. 314)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 530A" target="_blank">ENGINEERING TECHNOLOGY (CAP. 530A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 530" target="_blank">ENGINEERS (CAP. 530)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 479" target="_blank">ENTERTAINMENTS TAX (CAP. 479)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 8D" target="_blank">ENVIRONMENT AND LAND COURT (CAP. 8D)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 387" target="_blank">ENVIRONMENTAL MANAGEMENT AND CO-ORDINATION (CAP. 387)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 291" target="_blank">EQUITABLE MORTGAGES (CAP. 291)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 533" target="_blank">ESTATE AGENTS (CAP. 533)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=No. 10 of 1982" target="_blank">ESTATE DUTY (ABOLITION) (No. 10 of 1982)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 483" target="_blank">ESTATE DUTY (CAP. 483)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 7H" target="_blank">ETHICS AND ANTI-CORRUPTION COMMISSION (CAP. 7H)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 80" target="_blank">EVIDENCE (CAP. 80)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 448" target="_blank">EWASO NG’IRO NORTH RIVER BASIN DEVELOPMENT AUTHORITY (CAP. 448)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 447" target="_blank">EWASO NG’IRO SOUTH RIVER BASIN DEVELOPMENT AUTHORITY (CAP. 447)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 412" target="_blank">EXCHEQUER AND AUDIT (CAP. 412)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 472" target="_blank">EXCISE DUTY (CAP. 472)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 115" target="_blank">EXPLOSIVES (CAP. 115)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 517" target="_blank">EXPORT PROCESSING ZONES (CAP. 517)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 77" target="_blank">EXTRADITION (COMMONWEALTH COUNTRIES) (CAP. 77)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 76" target="_blank">EXTRADITION (CONTIGUOUS AND FOREIGN COUNTRIES) (CAP. 76)</a></div></div></div><a href="#" style="font-size:10pt; color:#8C0000; float: right;">Top</a><div style="font-size:20pt;color:#8C0000;" id="F"><b>F</b><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=No. 14 of 2023" target="_blank">FACILITIES IMPROVEMENT FINANCING (No. 14 of 2023)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 7L" target="_blank">FAIR ADMINISTRATIVE ACTION (CAP. 7L)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 32" target="_blank">FATAL ACCIDENTS (CAP. 32)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 410" target="_blank">FERRIES (CAP. 410)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 345" target="_blank">FERTILIZERS AND ANIMAL FOODSTUFFS (CAP. 345)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 222" target="_blank">FILMS AND STAGE PLAYS (CAP. 222)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 103" target="_blank">FIRE INQUIRY (CAP. 103)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 114" target="_blank">FIREARMS (CAP. 114)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 378" target="_blank">FISHERIES MANAGEMENT AND DEVELOPMENT (CAP. 378)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 254" target="_blank">FOOD, DRUGS AND CHEMICAL SUBSTANCES (CAP. 254)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 518" target="_blank">FOREIGN INVESTMENTS PROTECTION (CAP. 518)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 43" target="_blank">FOREIGN JUDGMENTS (RECIPROCAL ENFORCEMENT) (CAP. 43)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 185E" target="_blank">FOREIGN SERVICE (CAP. 185E)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 385" target="_blank">FOREST CONSERVATION AND MANAGEMENT (CAP. 385)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 87" target="_blank">FUGITIVE OFFENDERS PURSUIT (CAP. 87)</a></div></div></div><a href="#" style="font-size:10pt; color:#8C0000; float: right;">Top</a><div style="font-size:20pt;color:#8C0000;" id="G"><b>G</b><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 419" target="_blank">GENERAL LOAN AND STOCK (CAP. 419)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 198" target="_blank">GENEVA CONVENTIONS (CAP. 198)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 198" target="_blank">GENEVA CONVENTIONS (CAP. 198)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 535" target="_blank">GEOLOGISTS REGISTRATION (CAP. 535)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 220" target="_blank">GIRL GUIDES (CAP. 220)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 311" target="_blank">GOLD MINES DEVELOPMENT LOANS (CAP. 311)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 129" target="_blank">GOVERNMENT ACCOMMODATION (CAP. 129)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 25" target="_blank">GOVERNMENT CONTRACTS (CAP. 25)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 40" target="_blank">GOVERNMENT PROCEEDINGS (CAP. 40)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 421" target="_blank">GOVERNMENT SECURITIES (CAP. 421)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 450" target="_blank">GUARANTEE (HIGH COMMISSION POSTS AND TELECOMMUNICATIONS LOAN) (NO. 1) (CAP. 450)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 451" target="_blank">GUARANTEE (HIGH COMMISSION POSTS AND TELECOMMUNICATIONS LOAN) (NO. 2) (CAP. 451)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 452" target="_blank">GUARANTEE (HIGH COMMISSION POSTS AND TELECOMMUNICATIONS LOAN) (NO. 3) (CAP. 452)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 455" target="_blank">GUARANTEE (HIGH COMMISSION RAILWAYS AND HARBOURS LOAN) (NO. 1) (CAP. 455)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 456" target="_blank">GUARANTEE (HIGH COMMISSION RAILWAYS AND HARBOURS LOAN) (NO. 2) (CAP. 456)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 458" target="_blank">GUARANTEE (HIGH COMMISSION RAILWAYS AND HARBOURS LOAN) (NO. 3) (CAP. 458)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 459" target="_blank">GUARANTEE (HIGH COMMISSION RAILWAYS AND HARBOURS LOAN) (NO. 4) (CAP. 459)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 460" target="_blank">GUARANTEE (HIGH COMMISSION RAILWAYS AND HARBOURS LOAN) (NO. 5) (CAP. 460)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 457" target="_blank">GUARANTEE (HIGH COMMISSION RAILWAYS AND HARBOURS LOANS) (SUPPLEMENTARY PROVISIONS) (CAP. 457)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 462" target="_blank">GUARANTEE (HOUSE PURCHASE) (CAP. 462)</a></div></div></div><a href="#" style="font-size:10pt; color:#8C0000; float: right;">Top</a><div style="font-size:20pt;color:#8C0000;" id="H"><b>H</b><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 241" target="_blank">HEALTH (CAP. 241)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 539" target="_blank">HEALTH RECORDS AND INFORMATION MANAGERS (CAP. 539)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 359" target="_blank">HIDE, SKIN AND LEATHER TRADE (CAP. 359)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 8C" target="_blank">HIGH COURT (ORGANIZATION AND ADMINISTRATION) (CAP. 8C)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 213" target="_blank">HIGHER EDUCATION LOANS BOARD (CAP. 213)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 507" target="_blank">HIRE-PURCHASE (CAP. 507)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 246A" target="_blank">HIV AND AIDS PREVENTION AND CONTROL (CAP. 246A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 117" target="_blank">HOUSING (CAP. 117)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 538" target="_blank">HUMAN RESOURCE MANAGEMENT PROFESSIONALS (CAP. 538)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 252" target="_blank">HUMAN TISSUE (CAP. 252)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 372B" target="_blank">HYDROLOGISTS (CAP. 372B)</a></div></div></div><a href="#" style="font-size:10pt; color:#8C0000; float: right;">Top</a><div style="font-size:20pt;color:#8C0000;" id="I"><b>I</b><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 470" target="_blank">INCOME TAX (CAP. 470)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 44" target="_blank">INDEMNITY (CAP. 44)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 7C" target="_blank">INDEPENDENT ELECTORAL AND BOUNDARIES COMMISSION (CAP. 7C)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 86" target="_blank">INDEPENDENT POLICING OVERSIGHT AUTHORITY (CAP. 86)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 445" target="_blank">INDUSTRIAL AND COMMERCIAL DEVELOPMENT CORPORATION (CAP. 445)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 509" target="_blank">INDUSTRIAL PROPERTY (CAP. 509)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 237" target="_blank">INDUSTRIAL TRAINING (CAP. 237)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 53" target="_blank">INSOLVENCY (CAP. 53)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 405" target="_blank">INSURANCE (MOTOR VEHICLE THIRD PARTY RISKS) (CAP. 405)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 487" target="_blank">INSURANCE (CAP. 487)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 265F" target="_blank">INTERGOVERNMENTAL RELATIONS (CAP. 265F)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 60" target="_blank">INTERNATIONAL CRIMES (CAP. 60)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 465" target="_blank">INTERNATIONAL DEVELOPMENT ASSOCIATION (CAP. 465)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 466" target="_blank">INTERNATIONAL FINANCE CORPORATION (CAP. 466)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 394B" target="_blank">INTERNATIONAL INTERESTS IN AIRCRAFT EQUIPMENT (CAP. 394B)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 468" target="_blank">INTERNATIONAL MONETARY FUND (AMENDMENT OF ARTICLES) (CAP. 468)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 467" target="_blank">INTERNATIONAL MONETARY FUND (CAP. 467)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 2" target="_blank">INTERPRETATION AND GENERAL PROVISIONS (CAP. 2)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 542" target="_blank">INVESTMENT AND FINANCIAL ANALYSTS (CAP. 542)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 522" target="_blank">INVESTMENT DISPUTES CONVENTION (CAP. 522)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 485" target="_blank">INVESTMENT PROMOTION (CAP. 485)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 347" target="_blank">IRRIGATION (CAP. 347)</a></div></div></div><a href="#" style="font-size:10pt; color:#8C0000; float: right;">Top</a><div style="font-size:20pt;color:#8C0000;" id="J"><b>J</b><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 8" target="_blank">JUDICATURE (CAP. 8)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 8A" target="_blank">JUDICIAL SERVICE (CAP. 8A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 8B" target="_blank">JUDICIARY FUND (CAP. 8B)</a></div></div></div><a href="#" style="font-size:10pt; color:#8C0000; float: right;">Top</a><div style="font-size:20pt;color:#8C0000;" id="K"><b>K</b><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 11" target="_blank">KADHIS' COURTS (CAP. 11)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 496A" target="_blank">KENYA ACCREDITATION SERVICE (CAP. 496A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 319" target="_blank">KENYA AGRICULTURAL AND LIVESTOCK RESEARCH (CAP. 319)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 395" target="_blank">KENYA AIRPORTS AUTHORITY (CAP. 395)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 221" target="_blank">KENYA BROADCASTING CORPORATION (CAP. 221)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 171" target="_blank">KENYA CITIZENS AND FOREIGN NATIONALS MANAGEMENT SERVICE (CAP. 171)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 170" target="_blank">KENYA CITIZENSHIP AND IMMIGRATION (CAP. 170)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 200" target="_blank">KENYA COAST GUARD SERVICE (CAP. 200)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 218" target="_blank">KENYA CULTURAL CENTRE (CAP. 218)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 199" target="_blank">KENYA DEFENCE FORCES (CAP. 199)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 487C" target="_blank">KENYA DEPOSIT INSURANCE (CAP. 487C)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 216B" target="_blank">KENYA HEROES (CAP. 216B)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 511A" target="_blank">KENYA INDUSTRIAL RESEARCH AND DEVELOPMENT INSTITUTE (CAP. 511A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 411A" target="_blank">KENYA INFORMATION AND COMMUNICATIONS (CAP. 411A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 112A" target="_blank">KENYA INSTITUTE FOR PUBLIC POLICY RESEARCH AND ANALYSIS (CAP. 112A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 211A" target="_blank">KENYA INSTITUTE OF CURRICULUM DEVELOPMENT (CAP. 211A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 3" target="_blank">KENYA LAW REFORM COMMISSION (CAP. 3)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 209" target="_blank">KENYA LITERATURE BUREAU (CAP. 209)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 370" target="_blank">KENYA MARITIME AUTHORITY (CAP. 370)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 363" target="_blank">KENYA MEAT COMMISSION (CAP. 363)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 260" target="_blank">KENYA MEDICAL SUPPLIES AUTHORITY (CAP. 260)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 261" target="_blank">KENYA MEDICAL TRAINING COLLEGE (CAP. 261)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 215" target="_blank">KENYA NATIONAL COMMISSION FOR UNESCO (CAP. 215)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 7I" target="_blank">KENYA NATIONAL COMMISSION ON HUMAN RIGHTS (CAP. 7I)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 214A" target="_blank">KENYA NATIONAL EXAMINATIONS COUNCIL (CAP. 214A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 225" target="_blank">KENYA NATIONAL LIBRARY SERVICE BOARD (CAP. 225)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 214" target="_blank">KENYA NATIONAL QUALIFICATIONS FRAMEWORK (CAP. 214)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 349" target="_blank">KENYA PLANT HEALTH INSPECTORATE SERVICE (CAP. 349)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 391" target="_blank">KENYA PORTS AUTHORITY (CAP. 391)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 493B" target="_blank">KENYA POST OFFICE SAVINGS BANK (CAP. 493B)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 397" target="_blank">KENYA RAILWAYS CORPORATION (CAP. 397)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 256" target="_blank">KENYA RED CROSS SOCIETY (CAP. 256)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=No. 40 of 2016" target="_blank">KENYA REGIMENT (TERRITORIAL FORCE) REPEAL (No. 40 of 2016)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 487A" target="_blank">KENYA REINSURANCE CORPORATION (CAP. 487A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 469" target="_blank">KENYA REVENUE AUTHORITY (CAP. 469)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 408" target="_blank">KENYA ROADS (CAP. 408)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 408A" target="_blank">KENYA ROADS BOARD (CAP. 408A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 185D" target="_blank">KENYA SCHOOL OF GOVERNMENT (CAP. 185D)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 16C" target="_blank">KENYA SCHOOL OF LAW (CAP. 16C)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 219" target="_blank">KENYA SCOUTS (CAP. 219)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 251" target="_blank">KENYA SOCIETY FOR THE BLIND (CAP. 251)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 524" target="_blank">KENYA TRADE REMEDIES (CAP. 524)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 372A" target="_blank">KENYA WATER INSTITUTE (CAP. 372A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 441" target="_blank">KERIO VALLEY DEVELOPMENT AUTHORITY (CAP. 441)</a></div></div></div><a href="#" style="font-size:10pt; color:#8C0000; float: right;">Top</a><div style="font-size:20pt;color:#8C0000;" id="L"><b>L</b><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 234" target="_blank">LABOUR INSTITUTIONS (CAP. 234)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 233" target="_blank">LABOUR RELATIONS (CAP. 233)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 442" target="_blank">LAKE BASIN DEVELOPMENT AUTHORITY (CAP. 442)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 280" target="_blank">LAND (CAP. 280)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 284" target="_blank">LAND ADJUDICATION (CAP. 284)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 283" target="_blank">LAND CONSOLIDATION (CAP. 283)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 302" target="_blank">LAND CONTROL (CAP. 302)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 300" target="_blank">LAND REGISTRATION (CAP. 300)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 301" target="_blank">LANDLORD AND TENANT (SHOPS, HOTELS AND CATERING ESTABLISHMENTS) (CAP. 301)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 23" target="_blank">LAW OF CONTRACT (CAP. 23)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 37" target="_blank">LAW OF DOMICIL (CAP. 37)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 160" target="_blank">LAW OF SUCCESSION (CAP. 160)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 26" target="_blank">LAW REFORM (CAP. 26)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 18" target="_blank">LAW SOCIETY OF KENYA (CAP. 18)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 185C" target="_blank">LEADERSHIP AND INTEGRITY (CAP. 185C)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 16A" target="_blank">LEGAL AID (CAP. 16A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 16B" target="_blank">LEGAL EDUCATION (CAP. 16B)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 145" target="_blank">LEGITIMACY (CAP. 145)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 22" target="_blank">LIMITATION OF ACTIONS (CAP. 22)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 30" target="_blank">LIMITED LIABILITY PARTNERSHIP (CAP. 30)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 273" target="_blank">LOCAL AUTHORITIES (RECOVERY OF POSSESSION OF PROPERTY) (CAP. 273)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 270" target="_blank">LOCAL GOVERNMENT LOANS (CAP. 270)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 482" target="_blank">LOCAL MANUFACTURES (EXPORT COMPENSATION) (CAP. 482)</a></div></div></div><a href="#" style="font-size:10pt; color:#8C0000; float: right;">Top</a><div style="font-size:20pt;color:#8C0000;" id="M"><b>M</b><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 10" target="_blank">MAGISTRATES' COURTS (CAP. 10)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 154" target="_blank">MAINTENANCE ORDERS ENFORCEMENT (CAP. 154)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 246" target="_blank">MALARIA PREVENTION (CAP. 246)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 390" target="_blank">MARINE INSURANCE (CAP. 390)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 371" target="_blank">MARITIME ZONES (CAP. 371)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 150" target="_blank">MARRIAGE (CAP. 150)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 152" target="_blank">MATRIMONIAL PROPERTY (CAP. 152)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 356" target="_blank">MEAT CONTROL (CAP. 356)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 411B" target="_blank">MEDIA COUNCIL (CAP. 411B)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 253A" target="_blank">MEDICAL LABORATORY TECHNICIANS AND TECHNOLOGISTS (CAP. 253A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 253" target="_blank">MEDICAL PRACTITIONERS AND DENTISTS (CAP. 253)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 248" target="_blank">MENTAL HEALTH (CAP. 248)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 389" target="_blank">MERCHANT SHIPPING (CAP. 389)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 120" target="_blank">METHYLATED SPIRITS (CAP. 120)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 499C" target="_blank">MICRO AND SMALL ENTERPRISES (CAP. 499C)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 493C" target="_blank">MICROFINANCE (CAP. 493C)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 199A" target="_blank">MILITARY VETERANS (CAP. 199A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 306" target="_blank">MINING (CAP. 306)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 469C" target="_blank">MISCELLANEOUS FEES AND LEVIES (CAP. 469C)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 373" target="_blank">MOMBASA PIPELINE BOARD (CAP. 373)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 304" target="_blank">MORTGAGES (SPECIAL PROVISIONS) (CAP. 304)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 520" target="_blank">MOTOR VEHICLE COMPONENTS AND ACCESSORIES (CAP. 520)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 499A" target="_blank">MOVABLE PROPERTY SECURITY RIGHTS (CAP. 499A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 402" target="_blank">MTWAPA BRIDGE (CAP. 402)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 75A" target="_blank">MUTUAL LEGAL ASSISTANCE (CAP. 75A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 217" target="_blank">McMILLAN MEMORIAL LIBRARY (CAP. 217)</a></div></div></div><a href="#" style="font-size:10pt; color:#8C0000; float: right;">Top</a><div style="font-size:20pt;color:#8C0000;" id="N"><b>N</b><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 49A" target="_blank">NAIROBI CENTRE FOR INTERNATIONAL ARBITRATION (CAP. 49A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 495" target="_blank">NAIROBI INTERNATIONAL FINANCIAL CENTRE (CAP. 495)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 245" target="_blank">NARCOTIC DRUGS AND PSYCHOTROPIC SUBSTANCES (CONTROL) (CAP. 245)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=No. 4 of 2008" target="_blank">NATIONAL ACCORD AND RECONCILIATION (No. 4 of 2008)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 488E" target="_blank">NATIONAL AND GRINDLAYS BANK (APPORTIONMENT) (CAP. 488E)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 5" target="_blank">NATIONAL ASSEMBLY REMUNERATION (CAP. 5)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 122" target="_blank">NATIONAL AUTHORITY FOR THE CAMPAIGN AGAINST ALCOHOL AND DRUG ABUSE (CAP. 122)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 338" target="_blank">NATIONAL CEREALS AND PRODUCE BOARD (CAP. 338)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 7N" target="_blank">NATIONAL COHESION AND INTEGRATION (CAP. 7N)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 118" target="_blank">NATIONAL CONSTRUCTION AUTHORITY (CAP. 118)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 89" target="_blank">NATIONAL CORONERS SERVICE (CAP. 89)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 19A" target="_blank">NATIONAL COUNCIL FOR LAW REPORTING (CAP. 19A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 62" target="_blank">NATIONAL CRIME RESEARCH CENTRE (CAP. 62)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 388" target="_blank">NATIONAL DROUGHT MANAGEMENT AUTHORITY (CAP. 388)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 485D" target="_blank">NATIONAL ELECTRONIC SINGLE WINDOW SYSTEM (CAP. 485D)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 227" target="_blank">NATIONAL EMPLOYMENT AUTHORITY (CAP. 227)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 99" target="_blank">NATIONAL FLAG, EMBLEMS AND NAMES (CAP. 99)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 7K" target="_blank">NATIONAL GENDER AND EQUALITY COMMISSION (CAP. 7K)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 127" target="_blank">NATIONAL GOVERNMENT CO-ORDINATION (CAP. 127)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 414A" target="_blank">NATIONAL GOVERNMENT CONSTITUENCIES DEVELOPMENT FUND (CAP. 414A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 216A" target="_blank">NATIONAL HONOURS (CAP. 216A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 206" target="_blank">NATIONAL INTELLIGENCE SERVICE (CAP. 206)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 281" target="_blank">NATIONAL LAND COMMISSION (CAP. 281)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=No. 20 of 2023" target="_blank">NATIONAL LOTTERY (No. 20 of 2023)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 216" target="_blank">NATIONAL MUSEUMS AND HERITAGE (CAP. 216)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 491A" target="_blank">NATIONAL PAYMENT SYSTEM (CAP. 491A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 84" target="_blank">NATIONAL POLICE SERVICE (CAP. 84)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 85" target="_blank">NATIONAL POLICE SERVICE COMMISSION (CAP. 85)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 205" target="_blank">NATIONAL SECURITY COUNCIL (CAP. 205)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 258" target="_blank">NATIONAL SOCIAL SECURITY FUND (CAP. 258)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 404" target="_blank">NATIONAL TRANSPORT AND SAFETY AUTHORITY (CAP. 404)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 132" target="_blank">NATIONAL YOUTH COUNCIL (CAP. 132)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 208" target="_blank">NATIONAL YOUTH SERVICE (CAP. 208)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 387B" target="_blank">NATURAL RESOURCES (CLASSES OF TRANSACTIONS SUBJECT TO RATIFICATION) (CAP. 387B)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 134" target="_blank">NON-GOVERNMENTAL ORGANIZATIONS CO-ORDINATION (CAP. 134)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 17" target="_blank">NOTARIES PUBLIC (CAP. 17)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 17" target="_blank">NOTARIES PUBLIC (CAP. 17)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 243" target="_blank">NUCLEAR REGULATORY (CAP. 243)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 257" target="_blank">NURSES AND MIDWIVES (CAP. 257)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 253B" target="_blank">NUTRITIONISTS AND DIETICIANS (CAP. 253B)</a></div></div></div><a href="#" style="font-size:10pt; color:#8C0000; float: right;">Top</a><div style="font-size:20pt;color:#8C0000;" id="O"><b>O</b><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 15" target="_blank">OATHS AND STATUTORY DECLARATIONS (CAP. 15)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 236A" target="_blank">OCCUPATIONAL SAFETY AND HEALTH (CAP. 236A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 253H" target="_blank">OCCUPATIONAL THERAPISTS (TRAINING, REGISTRATION AND LICENSING) (CAP. 253H)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 34" target="_blank">OCCUPIERS’ LIABILITY (CAP. 34)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 6A" target="_blank">OFFICE OF THE ATTORNEY-GENERAL (CAP. 6A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 265E" target="_blank">OFFICE OF THE COUNTY ATTORNEY (CAP. 265E)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 6B" target="_blank">OFFICE OF THE DIRECTOR OF PUBLIC PROSECUTIONS (CAP. 6B)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 187" target="_blank">OFFICIAL SECRETS (CAP. 187)</a></div></div></div><a href="#" style="font-size:10pt; color:#8C0000; float: right;">Top</a><div style="font-size:20pt;color:#8C0000;" id="P"><b>P</b><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 196" target="_blank">PARLIAMENTARY PENSIONS (CAP. 196)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 6" target="_blank">PARLIAMENTARY POWERS AND PRIVILEGES (CAP. 6)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 186" target="_blank">PARLIAMENTARY SERVICE (CAP. 186)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 29" target="_blank">PARTNERSHIPS (CAP. 29)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 63" target="_blank">PENAL CODE (CAP. 63)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 190" target="_blank">PENSIONS (INCREASE) (CAP. 190)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 189" target="_blank">PENSIONS (CAP. 189)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 161" target="_blank">PERPETUITIES AND ACCUMULATIONS (CAP. 161)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 90A" target="_blank">PERSONS DEPRIVED OF LIBERTY (CAP. 90A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 133" target="_blank">PERSONS WITH DISABILITIES (CAP. 133)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 346" target="_blank">PEST CONTROL PRODUCTS (CAP. 346)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 274" target="_blank">PETITION TO COUNTY ASSEMBLIES (PROCEDURE) (CAP. 274)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 7E" target="_blank">PETITIONS TO PARLIAMENT (PROCEDURE) (CAP. 7E)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 308" target="_blank">PETROLEUM (CAP. 308)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 426" target="_blank">PETROLEUM DEVELOPMENT FUND (CAP. 426)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 244" target="_blank">PHARMACY AND POISONS (CAP. 244)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 303" target="_blank">PHYSICAL AND LAND USE PLANNING (CAP. 303)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 536" target="_blank">PHYSICAL PLANNERS REGISTRATION (CAP. 536)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 253D" target="_blank">PHYSIOTHERAPISTS (CAP. 253D)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 324" target="_blank">PLANT PROTECTION (CAP. 324)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 7D" target="_blank">POLITICAL PARTIES (CAP. 7D)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 411" target="_blank">POSTAL CORPORATION OF KENYA (CAP. 411)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 94" target="_blank">POWER OF MERCY (CAP. 94)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 4B" target="_blank">PREFERENTIAL TRADE AREA (IMPLEMENTATION) (CAP. 4B)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 487D" target="_blank">PREFERENTIAL TRADE AREA RE-INSURANCE COMPANY (MANDATORY RE-INSURANCE CESSIONS)ACT (CAP. 487D)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 57" target="_blank">PRESERVATION OF PUBLIC SECURITY (CAP. 57)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 216C" target="_blank">PRESIDENT'S AWARD (CAP. 216C)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 197A" target="_blank">PRESIDENTIAL RETIREMENT BENEFITS (CAP. 197A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 360" target="_blank">PREVENTION OF CRUELTY TO ANIMALS (CAP. 360)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 59C" target="_blank">PREVENTION OF FRAUD (INVESTMENTS) (CAP. 59C)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 59" target="_blank">PREVENTION OF ORGANISED CRIMES (CAP. 59)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 59B" target="_blank">PREVENTION OF TERRORISM (CAP. 59B)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 88" target="_blank">PREVENTION OF TORTURE (CAP. 88)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 134A" target="_blank">PREVENTION, PROTECTION AND ASSISTANCE TO INTERNALLY DISPLACED PERSONS AND AFFECTED COMMUNITIES (CAP. 134A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 504A" target="_blank">PRICE CONTROL (ESSENTIAL GOODS) (CAP. 504A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=No. 13 of 2023" target="_blank">PRIMARY HEALTH CARE (No. 13 of 2023)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 90" target="_blank">PRISONS (CAP. 90)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 207" target="_blank">PRIVATE SECURITY REGULATION (CAP. 207)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=No. 11 of 2023" target="_blank">PRIVATISATION (No. 11 of 2023)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 179" target="_blank">PRIVILEGES AND IMMUNITIES (CAP. 179)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 64" target="_blank">PROBATION OF OFFENDERS (CAP. 64)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 59A" target="_blank">PROCEEDS OF CRIME AND ANTI-MONEY LAUNDERING (CAP. 59A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 116" target="_blank">PROHIBITION OF ANTI-PERSONNEL MINES (CAP. 116)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 62B" target="_blank">PROHIBITION OF FEMALE GENITAL MUTILATION (CAP. 62B)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 100" target="_blank">PROMISSORY OATHS (CAP. 100)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 204" target="_blank">PROTECTED AREAS (CAP. 204)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 151" target="_blank">PROTECTION AGAINST DOMESTIC VIOLENCE (CAP. 151)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 68" target="_blank">PROTECTION OF AIRCRAFT (CAP. 68)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 218A" target="_blank">PROTECTION OF TRADITIONAL KNOWLEDGE AND CULTURAL EXPRESSIONS (CAP. 218A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=No. 9 of 2022" target="_blank">PROVIDENT FUND (REPEAL) ACT, 2022 (No. 9 of 2022)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 415" target="_blank">PROVISIONAL COLLECTION OF TAXES AND DUTIES (CAP. 415)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 265B" target="_blank">PUBLIC APPOINTMENTS (COUNTY ASSEMBLIES APPROVAL) (CAP. 265B)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 7F" target="_blank">PUBLIC APPOINTMENTS (PARLIAMENTARY APPROVAL) (CAP. 7F)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 19" target="_blank">PUBLIC ARCHIVES AND DOCUMENTATION SERVICE (CAP. 19)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 412B" target="_blank">PUBLIC AUDIT (CAP. 412B)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 39" target="_blank">PUBLIC AUTHORITIES LIMITATION (CAP. 39)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=No. 18 of 2013" target="_blank">PUBLIC BENEFITS ORGANIZATIONS (No. 18 of 2013)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 106" target="_blank">PUBLIC COLLECTIONS (CAP. 106)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 424" target="_blank">PUBLIC FEES (CAP. 424)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 412A" target="_blank">PUBLIC FINANCE MANAGEMENT (CAP. 412A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 242" target="_blank">PUBLIC HEALTH (CAP. 242)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 253G" target="_blank">PUBLIC HEALTH OFFICERS (TRAINING, REGISTRATION AND LICENCING) (CAP. 253G)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 110" target="_blank">PUBLIC HOLIDAYS (CAP. 110)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 185B" target="_blank">PUBLIC OFFICER ETHICS (CAP. 185B)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=No. 18 of 1977" target="_blank">PUBLIC OFFICERS’ PENSIONS (KENYA AND UNITED KINGDOM) AGREEMENT (No. 18 of 1977)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 56" target="_blank">PUBLIC ORDER (CAP. 56)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 430" target="_blank">PUBLIC PRIVATE PARTNERSHIPS (CAP. 430)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 412C" target="_blank">PUBLIC PROCUREMENT AND ASSET DISPOSAL (CAP. 412C)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 399" target="_blank">PUBLIC ROADS AND ROADS OF ACCESS (CAP. 399)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 407" target="_blank">PUBLIC ROADS TOLL (CAP. 407)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 185A" target="_blank">PUBLIC SERVICE (VALUES AND PRINCIPLES) (CAP. 185A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 185" target="_blank">PUBLIC SERVICE COMMISSION (CAP. 185)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 189A" target="_blank">PUBLIC SERVICE SUPERANNUATION SCHEME (CAP. 189A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 168" target="_blank">PUBLIC TRUSTEE (CAP. 168)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 7B" target="_blank">PUBLICATION OF ELECTORAL OPINION POLLS (CAP. 7B)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 340" target="_blank">PYRETHRUM (CAP. 340)</a></div></div></div><a href="#" style="font-size:10pt; color:#8C0000; float: right;">Top</a><div style="font-size:20pt;color:#8C0000;" id="R"><b>R</b><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 365" target="_blank">RABIES (CAP. 365)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 253F" target="_blank">RADIOGRAPHERS (CAP. 253F)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 267" target="_blank">RATING (CAP. 267)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 14" target="_blank">RECORDS DISPOSAL (CAP. 14)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 474" target="_blank">REFINERY THROUGHPUT TAX (CAP. 474)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 173" target="_blank">REFUGEES (CAP. 173)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 499" target="_blank">REGISTRATION OF BUSINESS NAMES (CAP. 499)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 285" target="_blank">REGISTRATION OF DOCUMENTS (CAP. 285)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 107" target="_blank">REGISTRATION OF PERSONS (CAP. 107)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 296" target="_blank">RENT RESTRICTION (CAP. 296)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 197B" target="_blank">RETIREMENT BENEFITS (DEPUTY PRESIDENT AND DESIGNATED STATE OFFICERS) (CAP. 197B)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 197" target="_blank">RETIREMENT BENEFITS (CAP. 197)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 1" target="_blank">REVISION OF THE LAWS (CAP. 1)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 427" target="_blank">ROAD MAINTENANCE LEVY FUND (CAP. 427)</a></div></div></div><a href="#" style="font-size:10pt; color:#8C0000; float: right;">Top</a><div style="font-size:20pt;color:#8C0000;" id="S"><b>S</b><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 490B" target="_blank">SACCO SOCIETIES (CAP. 490B)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 412D" target="_blank">SALARIES AND REMUNERATION COMMISSION (CAP. 412D)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 31" target="_blank">SALE OF GOODS (CAP. 31)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 511" target="_blank">SCIENCE, TECHNOLOGY AND INNOVATION (CAP. 511)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 503" target="_blank">SCRAP METAL (CAP. 503)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 484" target="_blank">SECOND-HAND MOTOR VEHICLES PURCHASE TAX (CAP. 484)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 286" target="_blank">SECTIONAL PROPERTIES (CAP. 286)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 326" target="_blank">SEEDS AND PLANT VARIETIES (CAP. 326)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 63A" target="_blank">SEXUAL OFFENCES (CAP. 63A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP 493C" target="_blank">SHELTER-AFRIQUE (CAP 493C)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 10A" target="_blank">SMALL CLAIMS COURT (CAP. 10A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 258A" target="_blank">SOCIAL ASSISTANCE (CAP. 258A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=No. 16 of 2023" target="_blank">SOCIAL HEALTH INSURANCE (No. 16 of 2023)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 108" target="_blank">SOCIETIES (CAP. 108)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 517A" target="_blank">SPECIAL ECONOMIC ZONES (CAP. 517A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 440" target="_blank">SPECIFIC LOAN (COMMONWEALTH DEVELOPMENT CORPORATION) (CAP. 440)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 223" target="_blank">SPORTS (CAP. 223)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 259" target="_blank">ST. JOHN AMBULANCE OF KENYA (CAP. 259)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 480" target="_blank">STAMP DUTY (CAP. 480)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 496" target="_blank">STANDARDS (CAP. 496)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 446" target="_blank">STATE CORPORATIONS (CAP. 446)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 112" target="_blank">STATISTICS (CAP. 112)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 2A" target="_blank">STATUTORY INSTRUMENTS (CAP. 2A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 355" target="_blank">STOCK AND PRODUCE THEFT (CAP. 355)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 406" target="_blank">STREETS ADOPTION (CAP. 406)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 537" target="_blank">SUPPLIES PRACTITIONERS MANAGEMENT (CAP. 537)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 9B" target="_blank">SUPREME COURT (CAP. 9B)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 299" target="_blank">SURVEY (CAP. 299)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 387C" target="_blank">SUSTAINABLE WASTE MANAGEMENT (CAP. 387C)</a></div></div></div><a href="#" style="font-size:10pt; color:#8C0000; float: right;">Top</a><div style="font-size:20pt;color:#8C0000;" id="T"><b>T</b><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 443" target="_blank">TANA AND ATHI RIVERS DEVELOPMENT AUTHORITY (CAP. 443)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 469A" target="_blank">TAX APPEALS TRIBUNAL (CAP. 469A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 469B" target="_blank">TAX PROCEDURES (CAP. 469B)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 343" target="_blank">TEA (CAP. 343)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 212" target="_blank">TEACHERS SERVICE COMMISSION (CAP. 212)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 210A" target="_blank">TECHNICAL AND VOCATIONAL EDUCATION AND TRAINING (CAP. 210A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 473" target="_blank">TELECOMMUNICATIONS TAX (CAP. 473)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 512" target="_blank">TELEGRAPHIC PRESS MESSAGES (CAP. 512)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 245A" target="_blank">TOBACCO CONTROL (CAP. 245A)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 505" target="_blank">TRADE DESCRIPTIONS (CAP. 505)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 506" target="_blank">TRADE MARKS (CAP. 506)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 519" target="_blank">TRADING IN PROHIBITED GOODS (CAP. 519)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 403" target="_blank">TRAFFIC (CAP. 403)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 500" target="_blank">TRANSFER OF BUSINESSES (CAP. 500)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 90B" target="_blank">TRANSFER OF PRISONERS (CAP. 90B)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=NO. 6 OF 2013" target="_blank">TRANSITION COUNTY ALLOCATION OF REVENUE (NO. 6 OF 2013)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=No. 1 of 2012" target="_blank">TRANSITION TO DEVOLVED GOVERNMENT (No. 1 of 2012)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 4C" target="_blank">TREATY FOR THE ESTABLISHMENT OF THE EAST AFRICAN COMMUNITY (CAP. 4C)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 4D" target="_blank">TREATY-MAKING AND RATIFICATION (CAP. 4D)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 294" target="_blank">TRESPASS (CAP. 294)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 167" target="_blank">TRUSTEE (CAP. 167)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 164" target="_blank">TRUSTEES (PERPETUAL SUCCESSION) (CAP. 164)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 290" target="_blank">TRUSTS OF LAND (CAP. 290)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=No. 6 of 2008" target="_blank">TRUTH, JUSTICE AND RECONCILIATION (No. 6 of 2008)</a></div></div></div><a href="#" style="font-size:10pt; color:#8C0000; float: right;">Top</a><div style="font-size:20pt;color:#8C0000;" id="U"><b>U</b><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 494" target="_blank">UNCLAIMED FINANCIAL ASSETS (CAP. 494)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 210" target="_blank">UNIVERSITIES (CAP. 210)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 362" target="_blank">UPLANDS BACON FACTORY (CAP. 362)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 275" target="_blank">URBAN AREAS AND CITIES (CAP. 275)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 247" target="_blank">USE OF POISONOUS SUBSTANCES (CAP. 247)</a></div></div></div><a href="#" style="font-size:10pt; color:#8C0000; float: right;">Top</a><div style="font-size:20pt;color:#8C0000;" id="V"><b>V</b><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 266" target="_blank">VALUATION FOR RATING (CAP. 266)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 476" target="_blank">VALUE ADDED TAX (CAP. 476)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 532" target="_blank">VALUERS (CAP. 532)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 366" target="_blank">VETERINARY SURGEONS AND VETERINARY PARA-PROFESSIONALS (CAP. 366)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=No. 2 of 2011" target="_blank">VETTING OF JUDGES AND MAGISTRATES (No. 2 of 2011)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 41" target="_blank">VEXATIOUS PROCEEDINGS (CAP. 41)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 79A" target="_blank">VICTIM PROTECTION (CAP. 79A)</a></div></div></div><a href="#" style="font-size:10pt; color:#8C0000; float: right;">Top</a><div style="font-size:20pt;color:#8C0000;" id="W"><b>W</b><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 109" target="_blank">WAQF (CAP. 109)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 350" target="_blank">WAREHOUSE RECEIPT SYSTEM (CAP. 350)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 372" target="_blank">WATER (CAP. 372)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 513" target="_blank">WEIGHTS AND MEASURES (CAP. 513)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 195" target="_blank">WIDOWS’ AND CHILDREN’S PENSIONS (CAP. 195)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 192" target="_blank">WIDOWS’ AND ORPHANS’ PENSIONS (CAP. 192)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 376" target="_blank">WILDLIFE CONSERVATION AND MANAGEMENT (CAP. 376)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 67" target="_blank">WITCHCRAFT (CAP. 67)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 79" target="_blank">WITNESS PROTECTION (CAP. 79)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 78" target="_blank">WITNESS SUMMONSES (RECIPROCAL ENFORCEMENT) (CAP. 78)</a></div></div><div class="act search-result"><div class="act-title"><a href="actview.xql?actid=CAP. 236" target="_blank">WORK INJURY BENEFITS (CAP. 236)</a></div></div></div><a href="#" style="font-size:10pt; color:#8C0000; float: right;">Top</a></div>
+                                                </div>
+                                                <div id="tab-help" class="yui-hidden">
+                                                    <div id="help" style="width: 800px;">
+                                                        <div>
+                                                            <h1>Help</h1>
+                                                            <h2>Searching the Laws Of Kenya</h2>
+                                                            <p>There are several ways to find content in the Laws of Kenya database. You can search by  Act Name, Act Number/Cap Number or by Full Text Search, or browse using the Table of Contents. 
+											
+								</p>
+                                                            <p>
+								The default search that is supplied to you is to search by <b>Act Name</b>. This search type 
+								loads first when the Laws of Kenya is launched. To search simply type in the name of the act you are interested in and click
+								 Search. The system will search the Laws of Kenya using the search term you entered. The Cap/Act Number search will work
+								  on the full Cap/Act Number or a just a few digits. 
+								</p>
+                                                            <p>
+								The second method of searching is to click on the <b>Cap/Act Number</b> tab, which enables you to seach using the Cap or Act number. 
+								To search enter in part of the Cap Number of the entire Cap Number and click Search, or hit enter. 
+								The system will search the Laws of Kenya using the search term you entered. The Act Name search works whether you enter the full
+								  name of the act or just a few letters of the act name. 
+								</p>
+                                                            <p>
+								To search using any search term then click on the <b>Full Text Search</b> tab. To search enter a search term and click Search, or hit enter.
+								The results from the search are listed vertically. The information for each search result is as follows; Act number, Act name, a short description
+								 of the Act and a statistic of how many instances of the search term where found. If you click on the act name it will take you to the full act listing.
+								  If you do not find a search result then the system will indicate as such. The full text search will provide results whether you enter a full word or a few letters.
+								  Please note that full text search provides more results than the other search types since it will bring back the occurrence of your search term regardless
+								   of the general context of the act. This can make it more difficult to work through the search results. But if you do not know enough about the subject you
+								    are looking for it can be a very useful starting point. 
+								</p>
+                                                            <p>Alternatively you can browse through the <b>Table of Contents</b> of the Laws of Kenya which includes all acts ordered alphabetically. Select the appropriate act
+								 and you can open it. Acts that you click on always open in a new tab or window (depending on you browser). The Table of Contents only lists Acts and not Subsidiary legislation.
+								  You must find the act you are interested in, and load it up by clicking on it. Once you are viewing an act you can navigate to its Subsidiary legislation by clicking
+								   on its link to Subsidiary legislation.
+								 </p>
+                                                            <br>
+                                                            <img src="images/search.png" style="border: 1px solid #eaeaea; padding: 3px; width: 845px;">
+                                                            <br>
+                                                            <br>
+                                                            <h2>Search Results</h2>
+                                                            <p>
+								When the system finds what you looked for, the search results are listed one underneath each other with a short
+								 extract describing what the act is about. If there are no results then the system will indicate as such. You can read through the listing
+								  to determine if any of the results
+								  are what you required. If not, you can search again by changing the search term or the style of search. If you are
+								   happy with the result you can click on the name of the appropriate act or piece of subsidiary legislation. This will load the
+								    appropriate piece of legislation for you to review.
+								</p>
+                                                            <br>
+                                                            <img src="images/results.png" style="border: 1px solid #eaeaea; padding: 3px; width: 845px;">
+                                                            <br>
+                                                            <br>
+                                                            <h2>Legislation Detail</h2>
+                                                            <p>On clicking of your favoured search result the appropriate piece of legislation is loaded. Regardless of what approach you take to searching or browsing
+											 for legislation ultimately you will end up viewing an act or a subsidiary piece of legislation. The way you view and work with legislation has
+											  the same means of navigation. The legislation view has several zones that you should get comfortable with. There is the Act Title zone at the top
+											   which contains the act number, act title and act description. On the left side there is the Table of Contents of the act as well as a link
+											    to subsidiary legislation if any exists. On the right side there is the content or Body zone where the text of the act is shown. When working with
+												 legislation online the concept of pages is no longer applicable. Rather you are able to scroll up and down through the content
+												  as if it were one singular page. You can read through an entire act from top to bottom in one sitting. Or you can take advantage of tables
+												   of content and hyperlinks that will allow you to jump to specific sections in the content. </p>
+                                                            <h2>Table of Contents</h2>
+                                                            <p>A fairly high proportion of the laws of Kenya do not lend themselves easily to reading from start to finish, there are simply just a vast number
+											 of pages and content to wade through. The Table of Contents that you will find on every act is your means to quickly jump to an area of interest.
+											 The Table of Contents is comprised of Parts and Sections primarily. You will find a listing of Parts if applicable when you load up an Act. 
+											 Each part will have a + icon next its name. When you click on the part name it will take the content to the start of that part.If you click the + icon
+											  the list of sections beneath the part will be revealed. When you click on the section name it will take the content to the start of that section.
+											   Every section is numbered with its section number and so is quite easy to follow where you are in the act. If you are overwhelmed by the number
+											    of sections, or you would like to navigate through another part of the act, simply click on the - icon next to the part you are looking through
+												 and the sections under that part will be collapsed from view.											 
+								</p>
+                                                            <p>Often you will find that the list of parts and sections is quite long in the Table of Contents. In these situations a scrollbar will be rendered next
+								 to the Table of Contents that you can use to scroll up and down the Table of Contents just as you require to find the correct part of section to click on.
+								 When you scroll down the body or contents section on the right you will find that the Table of Contents keeps track with you, always one click away on the
+								  left hand side of the Laws of Kenya interface.
+</p>
+                                                            <br>
+                                                            <img src="images/detail.png" style="border: 1px solid #eaeaea; padding: 3px; width: 845px;">
+                                                            <br>
+                                                            <br>
+                                                            <h2>Hyperlinks</h2>
+                                                            <p>
+								One of the most exciting features of the new Laws of Kenya database is that there are now hyperlinks in the content of the legislation. A hyperlink
+								 is simply a link that when clicked takes you to another section in the current act you are viewing, or it takes you to a section in another act. A link is formed
+								  for a variety of reasons but generally it is because there is a reference to another section or act in the text of the current legislation that you are reading. 
+								  To use a link, simply click on it and if it is an internal link it the screen will scroll down to the reference. If it is an external link (i.e. to another act),
+								   then the system will open another tab/window with that content in it.
+								</p>
+                                                            <h2>Exporting to PDF and RTF</h2>
+                                                            <p>Whilst it is exciting to be able to quickly search and find pieces of legislation, browse through them and navigate to related content, often once you have found
+								 the content you need to work with it. The new Laws of Kenya database provides two ways to work with content once you have found it, that will make your job easier.
+								 Firstly you can quickly get a PDF version of the piece of legislation that you are viewing, simply click on the PDF icon to be able to download a PDF. 
+								 Secondly you can get a RTF version that will open in your favorite word processor so that you can edit the content to your hearts content. To do this click
+								  on the RTF icon and it will download the file directly. The export icons are found at the top right of the Laws of Kenya database interface.
+</p>
+                                                            <h2>Point in Time</h2>
+                                                            <p>Often when looking for legal information in the Laws of Kenya you will find yourself needing to understand what the law looked like not only currently, but also several years ago.
+ The nature of the law is such that it changes and when one needs to understand what was legally in force at the time, it can be quite difficult to do so. The amount of information
+  that one needs to work through can be overwhelming. Therefore we are excited to include in the new Laws of Kenya a very powerful feature, Point in Time. This feature allows you to
+   navigate back in time to see what an act may have looked like in its previously amended forms. For example you may need to see what the Income Tax act looked like in 2004, well
+    with Point in Time you can do just that. To use the feature all you need to do is to search for an act and load it up as usual. If the act has previous amended versions you will notice
+	 a Point in time drop down at the top of the act. Simply click on the drop down and select a date from it (each date refers to a previous amended version of the act you are viewing),
+	  and the system will load that particular version. If you wish to go back to the current version, click on the Point in time drop down again and select the top most date, that
+	   is the current version.
+</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div id="tab-credits" class="yui-hidden">
+                                                    <div id="credits">
+                                                        <div>
+                                                            <h1>Credits</h1>
+                                                            <table width="100%" class="credits">
+                                                                <tbody><tr>
+                                                                    <td></td>
+                                                                    <td>Prof. Githu Muigai</td>
+                                                                    <td></td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td></td>
+                                                                    <td>
+                                                                        <b>Attorney General</b>
+                                                                    </td>
+                                                                    <td></td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td></td>
+                                                                    <td>Michael Muchiri Murungi</td>
+                                                                    <td></td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td></td>
+                                                                    <td>
+                                                                        <b>Editor</b>
+                                                                    </td>
+                                                                    <td></td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td></td>
+                                                                    <td>Esther Nyaiyaki Onchana</td>
+                                                                    <td></td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td></td>
+                                                                    <td>
+                                                                        <b>Senior Assistant Editor</b>
+                                                                    </td>
+                                                                    <td></td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td>
+                                                                        <br>
+                                                                        <br>
+                                                                    </td>
+                                                                    <td></td>
+                                                                    <td></td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td>
+                                                                        <b>National Council for Law Reporting</b>
+                                                                    </td>
+                                                                    <td>
+                                                                        <b>State Law Office</b>
+                                                                    </td>
+                                                                    <td>
+                                                                        <b>Project Implementation &amp; Technical Support</b>
+                                                                    </td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td>
+                                                                        <b>Project Lead</b>
+                                                                    </td>
+                                                                    <td>Margaret N. Nzioka</td>
+                                                                    <td>Kathurima M'Inoti</td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td>Ann Muthoni Asugah</td>
+                                                                    <td>
+                                                                        <em>Chief Parliamentary</em>
+                                                                    </td>
+                                                                    <td>
+                                                                        <em>Chairperson, Kenya Law</em>
+                                                                    </td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td>
+                                                                        <b>Legal Research</b>
+                                                                    </td>
+                                                                    <td>
+                                                                        <em>Counsel</em>
+                                                                    </td>
+                                                                    <td>
+                                                                        <em>Reform Commission</em>
+                                                                    </td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td>Petronella Mukaindo</td>
+                                                                    <td></td>
+                                                                    <td></td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td>Wambui Kamau</td>
+                                                                    <td>Elizabeth M. Ng'ang'a</td>
+                                                                    <td>Christine Agimba</td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td>Christian Bernard Ateka</td>
+                                                                    <td>
+                                                                        <em>Deputy Chief Parliamentary</em>
+                                                                    </td>
+                                                                    <td>
+                                                                        <em>Project Manager/Legal</em>
+                                                                    </td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td>Collins Kiptoo Limo</td>
+                                                                    <td>
+                                                                        <em>Counsel</em>
+                                                                    </td>
+                                                                    <td>
+                                                                        <em>Sector Specialist, FLSTAP</em>
+                                                                    </td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td>Vivian Akure Etyang</td>
+                                                                    <td></td>
+                                                                    <td></td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td>
+                                                                        <b>Legal Proofreading</b>
+                                                                    </td>
+                                                                    <td>Norman M. Kalendu</td>
+                                                                    <td>Johnson Okello</td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td>Moses Wanjala Sikuta</td>
+                                                                    <td>
+                                                                        <em>Law Clerk</em>
+                                                                    </td>
+                                                                    <td>
+                                                                        <em>Legal Sector Specialist, FLSTAP</em>
+                                                                    </td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td>
+                                                                        <b>Copy Reading</b>
+                                                                    </td>
+                                                                    <td></td>
+                                                                    <td></td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td>Yvonne Wanjiru Kirina</td>
+                                                                    <td>Bernard W. Irungu</td>
+                                                                    <td>Andrew G. Rukaria</td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td>Monica Wangui Mwangi</td>
+                                                                    <td>
+                                                                        <em>Law Clerk</em>
+                                                                    </td>
+                                                                    <td>
+                                                                        <em>Government Printer</em>
+                                                                    </td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td>
+                                                                        <b>Copy Editing</b>
+                                                                    </td>
+                                                                    <td></td>
+                                                                    <td></td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td>Laila Linda Mbevi</td>
+                                                                    <td></td>
+                                                                    <td>Paul Sang</td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td>Julie Ann Mbijiwe</td>
+                                                                    <td></td>
+                                                                    <td>Osborn Omoke</td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td>Naomi Wangui Mutunga</td>
+                                                                    <td></td>
+                                                                    <td>Peter Kiprono Bett</td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td>Evelyn Emaase Anyokorit</td>
+                                                                    <td></td>
+                                                                    <td></td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td>
+                                                                        <b>Data Processing</b>
+                                                                    </td>
+                                                                    <td></td>
+                                                                    <td>Flavio Zeni</td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td>Eva Wambui Murage</td>
+                                                                    <td></td>
+                                                                    <td>Ashok Hariharan</td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td>Kaveke Dorcas Kasia</td>
+                                                                    <td></td>
+                                                                    <td>Fabio Vitali</td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td>
+                                                                        <b>ICT</b>
+                                                                    </td>
+                                                                    <td></td>
+                                                                    <td>Monica Palmirani</td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td>Michael Mayaka</td>
+                                                                    <td></td>
+                                                                    <td></td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td>Victor Cheruiyot</td>
+                                                                    <td></td>
+                                                                    <td>
+                                                                        <b>Consultant</b>
+                                                                    </td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td>Martin Andago</td>
+                                                                    <td></td>
+                                                                    <td>LexisNexis (Pty) Ltd</td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td>
+                                                                        <b>Graphic Design</b>
+                                                                    </td>
+                                                                    <td></td>
+                                                                    <td></td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td>Geoffrey A. Andare</td>
+                                                                    <td></td>
+                                                                    <td></td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td>
+                                                                        <b>Research &amp; Development</b>
+                                                                    </td>
+                                                                    <td></td>
+                                                                    <td></td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td>Siphirah Gatimu</td>
+                                                                    <td></td>
+                                                                    <td></td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td>Kenneth Oduor</td>
+                                                                    <td></td>
+                                                                    <td></td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td>Estherivy Kiarie</td>
+                                                                    <td></td>
+                                                                    <td></td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td>
+                                                                        <b>Project Management</b>
+                                                                    </td>
+                                                                    <td></td>
+                                                                    <td></td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td>Lydia Midecha</td>
+                                                                    <td></td>
+                                                                    <td></td>
+                                                                </tr>
+                                                            </tbody></table>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div id="label-search-results"></div>
+                                        <div id="loadingDiv" style="width: 500px;text-align:center;display:none;">
+                                            <img src="images/main_loader.gif">
+                                        </div>
+                                        <div>
+                                            <p></p>
+                                            <br>
+                                            <br>
+                                            <br>
+                                        </div>
+                                        <div id="results-grid" style="width: 100%; display: none;"></div>
+                                        <div id="ad-viewer-panel">
+                                            <script type="text/javascript">
+    /** THE YUI Modules used here are initialized in onDomReady, see custom.xqm **/
+    // -- page level scripts requird by advanced search --
+    </script>
+                                            <div id="ad-search-summary" class="yui-pe-content">
+                                                <div class="bd"><!-- body for search summary --></div>
+                                            </div>
+                                            <div id="ad-search-results" class="yui-pe-content">
+                                                <div class="bd"><!-- body for search results --></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody></table>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <div class="white-bottom inside-page-footer">
+                            <div class="container">
+                                <table style="padding:20px 64px 20px 40px;">
+                                    <thead></thead>
+                                    <tbody>
+                                        <tr>
+                                            <td style="width: 72%; padding-right:64px;">
+                                                <div class="footer-left">
+                                                    <p>Except for some material which is expressly stated to be under a specified <a href="http://www.creativecommons.org/" target="_blank">Creative Commons</a> license, the contents of 
+														this website are in the public domain and free from any copyright restrictions</p>
+                                                </div>
+                                                <ul id="footer-links"><!-- 	<li><a href="https://www.kenyalaw.org/kl/index.php?id=115">About Us</a> | </li>	
+														<li><a href="https://www.kenyalaw.org/kl/index.php?id=133">Careers</a> | </li>
+														<li><a href="https://www.kenyalaw.org/kl/index.php?id=157">Judicial Profiles</a> | </li>
+														<li><a href="https://www.kenyalaw.org/p_catalog">Product Catalogue</a> | </li>
+														<li><a href="https://www.kenyalaw.org/kl/index.php?id=2159">Sitemap</a> | </li>
+														<li><a href="https://www.kenyalaw.org/kl/index.php?id=3158">Contact Us</a></li>	 -->
+                                                    <li>
+                                                        <a href="https://www.kenyalaw.org/">Home  |</a>
+                                                    </li>
+                                                    <li>
+                                                        <a href="https://kenyalaw.org/kl/index.php?id=115">About Us  |</a>
+                                                    </li>
+                                                    <li>
+                                                        <a href="https://kenyalaw.org/kl/index.php?id=2287">Our Partners  |</a>
+                                                    </li>
+                                                    <li>
+                                                        <a href="https://kenyalaw.org/kl/index.php?id=133">Careers  |</a>
+                                                    </li>
+                                                    <li>
+                                                        <a href="https://kenyalaw.org/kl/index.php?id=3158">Contact Us  |</a>
+                                                    </li>
+                                                    <li>
+                                                        <a href="https://kenyalaw.org/kl/index.php?id=3386">Sitemap  |</a>
+                                                    </li>
+                                                </ul>
+                                                <p class="footer-cpr">© 2024 National Council for Law Reporting (Kenya Law). · | <a href="https://kenyalaw.org/kl/index.php?id=2161" target="_blank">Creative Commons</a> · <a href="https://kenyalaw.org/kl/index.php?id=390" target="_blank">Privacy Policy and Disclaimer</a>
+                                                </p>
+                                            </td>
+                                            <td style="border-left: #dadada solid 1px;">
+                                                <div class="social-icons">
+													     Follow us:<br>
+                                                    <a href="https://www.facebook.com/MyKenyaLaw" target="_blank">
+                                                        <img src="images/facebook.jpg">
+                                                    </a>
+                                                    <a href="https://twitter.com/MyKenyaLaw" target="_blank">
+                                                        <img src="images/twitter.jpg">
+                                                    </a>
+                                                    <a href="http://www.youtube.com/user/MyKenyaLaw" target="_blank">
+                                                        <img src="images/youtube.jpg">
+                                                    </a>
+                                                </div>
+                                                <p class="pull-right">
+                                                    <a href="#">
+                                                        <img src="images/back-to-top.gif">
+                                                    </a>
+                                                </p>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+            <script type="text/javascript">
+
+          function tsModulesHide() {
+                YAHOO.kenyalex.bungeni.actbuttonpanel.hide();
+                YAHOO.kenyalex.bungeni.titlesearchresults.hide();
+                YAHOO.kenyalex.bungeni.actviewer.hide();
+          }
+          
+          function tsModulesShow() {
+                YAHOO.kenyalex.bungeni.actbuttonpanel.show();
+                YAHOO.kenyalex.bungeni.titlesearchresults.show();
+                YAHOO.kenyalex.bungeni.actviewer.show();
+          }
+          
+          function tsModulesPreview(){
+                YAHOO.kenyalex.bungeni.actbuttonpanel.show();
+                YAHOO.kenyalex.bungeni.titlesearchresults.show();
+                YAHOO.kenyalex.bungeni.actviewer.hide();
+           }
+          
+          function csModulesHide() {
+                YAHOO.kenyalex.bungeni.capnosearchresults.hide(); 
+                YAHOO.kenyalex.bungeni.csactbuttonpanel.hide(); 
+                YAHOO.kenyalex.bungeni.csactviewer.hide();           
+          }
+          
+          function csModulesPreview() {
+                YAHOO.kenyalex.bungeni.capnosearchresults.show(); 
+                YAHOO.kenyalex.bungeni.csactbuttonpanel.show(); 
+                YAHOO.kenyalex.bungeni.csactviewer.hide();           
+          }
+ 
+ 
+          function csModulesShow() {
+                YAHOO.kenyalex.bungeni.capnosearchresults.show(); 
+                YAHOO.kenyalex.bungeni.csactbuttonpanel.show(); 
+                YAHOO.kenyalex.bungeni.csactviewer.show();                         
+          }
+          
+          function adModulesShow() {
+                 //YAHOO.kenyalex.bungeni.adsearchresults.show();
+          }
+          
+          function adModulesHide() {
+                 //YAHOO.kenyalex.bungeni.adsearchresults.hide();
+          }
+
+          /* Handler function for tab change event */
+          function tabChangeHandler(ev) {
+                    var TABS = YAHOO.kenyalex.bungeni.Tabs;
+                    var oldTab = ev.prevValue;
+                    var newTab = ev.newValue;
+
+                    /** title search tab **/
+                    var tabTS = TABS.getTab(0);
+                    /** cap search tab **/
+                    var tabCS = TABS.getTab(1);
+                    /** full text search tab **/
+                    var tabAS = TABS.getTab(2);
+                    /** TOC **/
+										var tabTOC = TABS.getTab(3);
+
+										var tabHelp = TABS.getTab(4);
+
+										var tabCredits = TABS.getTab(5);
+
+
+                    if (oldTab === tabTS) {
+                        tsModulesHide();
+                    }
+
+                    if (newTab === tabTS) {
+											$("#results-grid").show();
+											$("#filter").show();
+                    }
+
+										if (newTab === tabHelp) {
+											$("#results-grid").hide();
+											$("#filter").hide();
+										}
+
+										if (newTab === tabCredits) {
+											$("#results-grid").hide();
+											$("#filter").hide();
+										}
+
+                    if (oldTab === tabCS ) {
+                         csModulesHide();
+                    }
+
+                    if (newTab === tabCS) {
+											$("#results-grid").show();     
+											$("#filter").show();     
+                    }
+                    
+                    if (oldTab == tabAS) {
+                        adModulesHide();
+                    }
+
+                    if (newTab == tabAS) {
+											$("#results-grid").show();
+											$("#filter").show();
+											adModulesShow();
+                    }
+
+										if (newTab == tabTOC) {
+					    				$("#results-grid").hide();
+											$("#filter").hide();
+											loadTOC();
+                    }
+
+                    /* some resize changes for footer */
+                    if ( newTab == tabCredits ){
+
+                    	$("#ffix").css({ height: ( $("#tab-credits").height() + 100)+ "px" });
+                    }
+                    else if ( newTab == tabHelp ){
+
+                    	$("#ffix").css({ height: ( $("#tab-help").height() + 100)+ "px" });
+                    }
+                    else {
+
+                    	$("#ffix").css({ height: 'auto' });
+                    }}   
+
+
+            
+          YAHOO.kenyalex.bungeni.Tabs.on('activeTabChange', tabChangeHandler );
+
+ 
+ </script>
+            <script type="text/javascript">
+        /** BeginRenderedBy(lexcustom:get-dom-ready()) **/
+       	 YAHOO.util.Event.onDOMReady(function () {
+         /** initialize tab #1 **/
+         YAHOO.util.Dom.removeClass("ts-actviewer", "yui-pe-content");
+         YAHOO.util.Dom.removeClass("ts-actbuttonpanel", "yui-pe-content");
+         YAHOO.util.Dom.removeClass("title-search-results", "yui-pe-content");
+        
+         YAHOO.kenyalex.bungeni.titlesearchresults = new YAHOO.widget.Module("title-search-results", {visible: false});
+         YAHOO.kenyalex.bungeni.actbuttonpanel = new YAHOO.widget.Module("ts-actbuttonpanel", { visible: false });
+         YAHOO.kenyalex.bungeni.actviewer = new YAHOO.widget.Module("ts-actviewer", { visible: false });        
+       
+         YAHOO.kenyalex.bungeni.titlesearchresults.render();
+         YAHOO.kenyalex.bungeni.actbuttonpanel.render();
+         YAHOO.kenyalex.bungeni.actviewer.render();
+         /** event listeners are defined in titlesearch.xqm **/
+         YAHOO.util.Event.addListener("ts-showhtml", "click", searchForAct, YAHOO.kenyalex.bungeni.actviewer, true);
+         YAHOO.util.Event.addListener("ts-hidehtml", "click", hideSearchForAct, YAHOO.kenyalex.bungeni.actviewer, true);
+         YAHOO.util.Event.addListener("ts-openwin", "click", tsOpenWin, YAHOO.kenyalex.bungeni.actviewer, true);
+          
+
+         /** initialize tab #2 **/
+         YAHOO.util.Dom.removeClass("cs-actviewer", "yui-pe-content");
+         YAHOO.util.Dom.removeClass("cs-actbuttonpanel", "yui-pe-content");
+         YAHOO.util.Dom.removeClass("capno-search-results", "yui-pe-content");
+         YAHOO.kenyalex.bungeni.capnosearchresults = new YAHOO.widget.Module("capno-search-results", {visible: false});
+         YAHOO.kenyalex.bungeni.csactbuttonpanel = new YAHOO.widget.Module("cs-actbuttonpanel", { visible: false });
+         YAHOO.kenyalex.bungeni.csactviewer = new YAHOO.widget.Module("cs-actviewer", { visible: false });
+        
+         YAHOO.kenyalex.bungeni.csactviewer.render();
+         YAHOO.kenyalex.bungeni.capnosearchresults.render();
+         YAHOO.kenyalex.bungeni.csactbuttonpanel.render();
+
+         /** event listeners are defined in capsearch.xqm **/
+         YAHOO.util.Event.addListener("cs-showhtml", "click", searchForCap, YAHOO.kenyalex.bungeni.csactviewer, true);
+         YAHOO.util.Event.addListener("cs-hidehtml", "click", hideSearchForCap, YAHOO.kenyalex.bungeni.csactviewer, true);
+         YAHOO.util.Event.addListener("cs-openwin", "click", csOpenWin, YAHOO.kenyalex.bungeni.csactviewer, true);
+         
+         /** initialize advanced search tab **/
+         YAHOO.util.Event.addListener("ads-search-bn", "click", adsSearch, null, false);
+          YAHOO.util.Dom.removeClass("ad-search-results", "yui-pe-content");
+          YAHOO.util.Dom.removeClass("ad-search-summary", "yui-pe-content");
+          
+         YAHOO.kenyalex.bungeni.adsearchresults = new YAHOO.widget.Module("ad-search-results", {visible:false} );
+         YAHOO.kenyalex.bungeni.adsearchsummary = new YAHOO.widget.Module("ad-search-summary", {visible:false} );
+         
+         YAHOO.kenyalex.bungeni.adsearchresults.render();
+         YAHOO.kenyalex.bungeni.adsearchsummary.render();
+         
+        
+        /** EndRenderedBy(lexcustom:get-dom-ready()) **/
+      });
+
+
+		
+      </script>
+        </table>
+    
+
+</body></html>
