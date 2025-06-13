@@ -14,7 +14,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # ---------------------- Configuration ----------------------
 START_URL = "http://www.kenyalaw.org/lex//index.xql"
-MAX_DEPTH = 5
+MAX_DEPTH = 3
 DOWNLOAD_ROOT = "kenya_laws"
 PDF_DIR = os.path.join(DOWNLOAD_ROOT, "pdfs")
 HTML_DIR = os.path.join(DOWNLOAD_ROOT, "htmls")
