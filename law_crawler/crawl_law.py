@@ -11,6 +11,8 @@ from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
 from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from selenium.common.exceptions import WebDriverException
+from selenium.webdriver.chrome.service import Service
 
 
 class KenyaLawWebCrawler:
@@ -45,7 +47,19 @@ class KenyaLawWebCrawler:
         options.add_argument("--disable-gpu")
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
-        return webdriver.Chrome(ChromeDriverManager().install(), options=options)
+
+        try:
+            service = Service(ChromeDriverManager().install())
+            browser = webdriver.Chrome(service=service, options=options)
+            return browser
+        except WebDriverException as e:
+            tqdm.write(f"❌ Failed to launch browser: {e}")
+            return None
+        except Exception as e:
+            tqdm.write(f"❌ Unexpected error initializing browser: {e}")
+            return None
+
+
 
     def sanitize_filename(self, text):
         text = re.sub(r"[^\w\-]+", "_", text)
@@ -118,12 +132,17 @@ class KenyaLawWebCrawler:
         }
 
     def render_with_browser(self, url):
-        browser = self.setup_browser()
-        browser.get(url)
-        time.sleep(4)
-        html = browser.page_source
-        browser.quit()
-        return html
+        try:
+            browser = self.setup_browser()
+            browser.get(url)
+            time.sleep(4)
+            html = browser.page_source
+            browser.quit()
+            tqdm.write(f"✅ Rendered content from: {url}")
+            return html
+        except Exception as e:
+            tqdm.write(f"❌ Failed to render with browser: {url} — {e}")
+            return None
 
     def save_pdf(self, link, from_page):
         fname = os.path.basename(link).split("?")[0]
@@ -133,6 +152,7 @@ class KenyaLawWebCrawler:
 
         with self.downloaded_lock:
             if os.path.exists(path) or fname in self.downloaded_files:
+                tqdm.write(f"✅ Skipped existing PDF: {path}")
                 return None
 
         tqdm.write(f"📄 Downloading PDF from: {from_page} → {link}")
@@ -146,43 +166,74 @@ class KenyaLawWebCrawler:
             return fname
         return None
 
+    
     def save_akn_html(self, link, from_page):
-        fname = self.sanitize_filename(link) + ".html"
-        path = os.path.join(self.HTML_DIR, fname)
+        link_lower = link.lower()
+        fname = None
+
+        if "/judgment/" in link_lower:
+            prefix = "judgment"
+            path_part = link_lower.split("/judgment/")[-1]
+        elif "/act/" in link_lower:
+            prefix = "act"
+            path_part = link_lower.split("/act/")[-1]
+        elif "actview.xql?actid=" in link_lower:
+            prefix = "act"
+            path_part = parse_qs(urlparse(link).query).get("actid", ["act"])[0]
+        else:
+            prefix = "document"
+            path_part = os.path.basename(urlparse(link).path)
+
+        fname_raw = f"{prefix}_{self.sanitize_filename(path_part)}.html"
+        path = os.path.join(self.HTML_DIR, fname_raw)
+        raw_path = path.replace(".html", ".raw.html")
 
         with self.downloaded_lock:
-            if os.path.exists(path) or fname in self.downloaded_files:
+            if os.path.exists(path) or fname_raw in self.downloaded_files:
+                tqdm.write(f"✅ Skipped existing HTML: {path}")
                 return None
 
         tqdm.write(f"🌐 Rendering AKN/Act page: {from_page} → {link}")
         html = self.render_with_browser(link)
-        soup = BeautifulSoup(html, "html.parser")
-        title = soup.title.string.strip() if soup.title else link
-        clean_html = self.extract_act_body(html, title)
-        metadata = self.extract_metadata(soup, link)
+        if not html:
+            return None
 
-        with open(path, "w", encoding="utf-8") as f:
-            f.write(clean_html)
+        try:
+            with open(raw_path, "w", encoding="utf-8") as raw:
+                raw.write(html)
+            tqdm.write(f"📄 Raw HTML saved: {raw_path}")
 
-        # Save Markdown
-        markdown_path = path.replace(".html", ".md")
-        markdown = self.convert_to_markdown(soup, title)
-        with open(markdown_path, "w", encoding="utf-8") as f:
-            f.write(markdown)
+            soup = BeautifulSoup(html, "html.parser")
+            title = soup.title.string.strip() if soup.title else link
+            clean_html = self.extract_act_body(html, title)
+            metadata = self.extract_metadata(soup, link)
 
-        with self.downloaded_lock:
-            self.downloaded_files.add(fname)
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(clean_html)
 
-        tqdm.write(f"✅ HTML saved: {path}")
-        tqdm.write(f"✅ Markdown saved: {markdown_path}")
-        return {
-            "type": "akn",
-            "url": link,
-            "source": from_page,
-            "file_html": fname,
-            "file_md": os.path.basename(markdown_path),
-            "metadata": metadata
-        }
+            markdown_path = path.replace(".html", ".md")
+            markdown = self.convert_to_markdown(soup, title)
+            with open(markdown_path, "w", encoding="utf-8") as f:
+                f.write(markdown)
+
+            with self.downloaded_lock:
+                self.downloaded_files.add(fname_raw)
+
+            tqdm.write(f"✅ HTML saved: {path}")
+            tqdm.write(f"✅ Markdown saved: {markdown_path}")
+            return {
+                "type": "akn",
+                "url": link,
+                "source": from_page,
+                "file_html": fname_raw,
+                "file_md": os.path.basename(markdown_path),
+                "metadata": metadata
+            }
+        except Exception as e:
+            tqdm.write(f"❌ Error saving AKN HTML from {link}: {e}")
+            with open(self.LOG_FILE, "a", encoding="utf-8") as f:
+                f.write(f"[FAIL HTML] {link}: {e}\n")
+            return None
 
     def crawl_worker(self, current_url, current_depth, stack):
         with self.visited_lock:
