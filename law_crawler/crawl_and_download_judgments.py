@@ -5,14 +5,17 @@ from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 from time import sleep
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import re
 
 BASE_URL = "https://new.kenyalaw.org"
-OUT_DIR = "akn_index"
+INDEX_DIR = "akn_index"
+OUT_DIR = "akn_documents"
+os.makedirs(INDEX_DIR, exist_ok=True)
 os.makedirs(OUT_DIR, exist_ok=True)
 
 def get_total_pages(year):
-    url = f"{BASE_URL}/judgments/all/{year}/"
     try:
+        url = f"{BASE_URL}/judgments/all/{year}/"
         res = requests.get(url, timeout=30)
         res.raise_for_status()
         soup = BeautifulSoup(res.text, "html.parser")
@@ -38,17 +41,41 @@ def get_akn_from_summary(summary_path):
         soup = BeautifulSoup(res.text, "html.parser")
         akn = next((a["href"] for a in soup.select("a[href^='/akn/ke/judgment/']") if "eng@" in a["href"]), None)
         if akn:
-            akn_full = urljoin(BASE_URL, akn)
-            print(f"🔗 AKN Found: {akn_full}")
-            return akn_full
+            return urljoin(BASE_URL, akn)
+    except:
+        return None
+
+def download_and_save_akn(akn_url):
+    try:
+        res = requests.get(akn_url, timeout=30)
+        res.raise_for_status()
+        soup = BeautifulSoup(res.text, "html.parser")
+
+        year_match = re.search(r'eng@(\d{4})-\d{2}-\d{2}', akn_url)
+        year = year_match.group(1) if year_match else "unknown"
+        year_dir = os.path.join(OUT_DIR, year)
+        os.makedirs(year_dir, exist_ok=True)
+
+        title = soup.title.text.strip() if soup.title else "Unnamed_Judgment"
+        safe_title = re.sub(r"[^\w\-]+", "_", title)[:80]
+        file_path = os.path.join(year_dir, f"{safe_title}.txt")
+
+        if os.path.exists(file_path):
+            print(f"✅ Skipped (already saved): {file_path}")
+            return None
+
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(soup.get_text(separator="\n"))
+        print(f"💾 Saved AKN: {file_path}")
+        return akn_url
     except Exception as e:
-        print(f"⚠️ Error in summary {summary_path}: {e}")
-    return None
+        print(f"❌ Failed to download {akn_url}: {e}")
+        return None
 
 def collect_akn_links_for_year(year):
     print(f"\n📅 Year {year}")
-    total_pages = get_total_pages(year)
     akn_links = set()
+    total_pages = get_total_pages(year)
 
     for page in range(1, total_pages + 1):
         print(f"  🔎 Page {page}/{total_pages}")
@@ -62,10 +89,19 @@ def collect_akn_links_for_year(year):
                 if akn:
                     akn_links.add(akn)
 
-    out_path = os.path.join(OUT_DIR, f"akn_links_{year}.json")
+    saved_links = []
+    with ThreadPoolExecutor(max_workers=5) as downloader:
+        futures = [downloader.submit(download_and_save_akn, akn) for akn in akn_links]
+        for future in as_completed(futures):
+            result = future.result()
+            if result:
+                saved_links.append(result)
+
+    # Save index for the year
+    out_path = os.path.join(INDEX_DIR, f"akn_links_{year}.json")
     with open(out_path, "w", encoding="utf-8") as f:
-        json.dump(sorted(akn_links), f, indent=2)
-    print(f"✅ Saved {len(akn_links)} AKN links → {out_path}")
+        json.dump(sorted(saved_links), f, indent=2)
+    print(f"✅ Year {year}: {len(saved_links)} AKNs saved → {out_path}")
 
 if __name__ == "__main__":
     for year in range(1930, 2026):
