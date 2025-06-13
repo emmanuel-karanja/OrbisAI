@@ -38,7 +38,7 @@ def initialize_services():
     qa_pipeline = pipeline(
         "question-answering",
         model="deepset/roberta-base-squad2",
-        tokenizer="ddeepset/roberta-base-squad2"
+        tokenizer="deepset/roberta-base-squad2"
     )
 
     logger.info("QA pipeline loaded.")
