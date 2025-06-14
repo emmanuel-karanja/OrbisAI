@@ -26,6 +26,7 @@ class KenyaLawWebCrawler:
         self.MAX_DEPTH = max_depth
         self.DOWNLOAD_ROOT = download_root
         self.PDF_DIR = os.path.join(download_root, "pdfs")
+        self.DOCX_DIR = os.path.join(download_root, "docx")
         self.HTML_DIR = os.path.join(download_root, "htmls")
         self.LOG_FILE = os.path.join(download_root, "failures.log")
         self.INDEX_JSON = os.path.join(download_root, "index.json")
@@ -48,6 +49,7 @@ class KenyaLawWebCrawler:
         self.index = []
         self.saved_count = 0
         self.save_queue = Queue()
+
         threading.Thread(target=self.index_writer, daemon=True).start()
 
         self.load_existing_index()
@@ -277,6 +279,30 @@ class KenyaLawWebCrawler:
             with open(self.LOG_FILE, "a", encoding="utf-8") as f:
                 f.write(f"[FAIL HTML] {link}: {e}\n")
             return None
+    
+    def save_docx(self, link, from_page):
+        fname = os.path.basename(link).split("?")[0]
+        if not fname.lower().endswith(".docx"):
+            fname += ".docx"
+        path = os.path.join(self.DOCX_DIR, fname)  # Still saving under PDF_DIR
+
+        with self.downloaded_lock:
+            if os.path.exists(path) or fname in self.downloaded_files:
+                self.log(f"✅ Skipped existing DOCX: {path}")
+                return None
+
+        self.log(f"📄 Downloading DOCX from: {from_page} → {link}")
+        res = self.download_file(link)
+        if res and "application/vnd.openxmlformats-officedocument.wordprocessingml.document" in res.headers.get("Content-Type", ""):
+            with open(path, "wb") as f:
+                f.write(res.content)
+            with self.downloaded_lock:
+                self.downloaded_files.add(fname)
+            self.log(f"✅ DOCX saved: {path}")
+            return fname
+        else:
+            self.log(f"❌ Invalid Content-Type or failed to download DOCX: {link}")
+        return None
 
     def crawl_worker(self, current_url, current_depth, stack):
         with self.visited_lock:
@@ -305,7 +331,10 @@ class KenyaLawWebCrawler:
                 fname = self.save_pdf(link, current_url)
                 if fname:
                     self.save_index_if_needed({"type": "pdf", "url": link, "source": current_url, "file": fname})
-
+            elif ".docx" in link.lower():
+                fname = self.save_docx(link, current_url)
+                if fname:
+                    self.save_index_if_needed({"type": "docx", "url": link, "source": current_url, "file": fname})
             elif (
                 ".akn" in link.lower()
                 or "/akn/ke/" in link.lower()
@@ -342,10 +371,11 @@ class KenyaLawWebCrawler:
         end_time = datetime.now()
         self.log(f"\n✅ Done. Total documents saved: {len(self.index)}")
         self.log(f"📦 PDFs: {len([i for i in self.index if i['type'] == 'pdf'])}")
+        self.log(f"📝 DOCX: {len([i for i in self.index if i['type'] == 'docx'])}")
         self.log(f"🌐 AKN/Act Pages: {len([i for i in self.index if i['type'] == 'akn'])}")
         self.log(f"📄 Crawl index saved to {self.INDEX_JSON}")
         self.log(f"🕒 Total crawl time: {end_time - start_time}")
-
+        
 # Entry point with argparse
 
 def parse_args():
@@ -360,8 +390,8 @@ if __name__ == "__main__":
     args = parse_args()
     crawler = KenyaLawWebCrawler(
         start_url=args.url,
-        max_depth=args.depth,
+        max_depth=5,
         download_root=args.output,
-        max_workers=args.workers
+        max_workers=10
     )
     crawler.run()
