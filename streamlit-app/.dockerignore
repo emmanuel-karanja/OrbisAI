@@ -11,5 +11,14 @@ __pycache__/
 .idea/
 data/
 node_modules/
-/logs/
-/__pycache__/
+# Ignore log files and folders
+logs/
+*.log
+
+# Ignore Python cache
+__pycache__/
+*.py[cod]
+
+# Optional: ignore virtual environments
+venv/
+.env/

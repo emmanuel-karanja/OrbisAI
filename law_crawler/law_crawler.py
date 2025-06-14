@@ -36,7 +36,7 @@ class KenyaLawWebCrawler:
         self.TIMEOUT = 10
         self.RETRY_COUNT = 3
         self.MAX_WORKERS = max_workers
-        self.logger=setup_logger("KenyaLawWebCralwer",log_to_file=True)
+        self.logger=setup_logger("KenyaLawWebCrawler",log_to_file=True)
 
         os.makedirs(self.PDF_DIR, exist_ok=True)
         os.makedirs(self.DOCX_DIR, exist_ok=True)
