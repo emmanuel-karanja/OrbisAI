@@ -19,8 +19,6 @@ from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from selenium.common.exceptions import WebDriverException
 from hashlib import sha256
-import urllib.robotparser
-from threading import Semaphore
 import random
 
 class KenyaLawWebCrawler:
@@ -57,22 +55,6 @@ class KenyaLawWebCrawler:
         threading.Thread(target=self.index_writer, daemon=True).start()
 
         self.load_existing_index()
-
-        # Setup robots.txt parser
-        self.robots = urllib.robotparser.RobotFileParser()
-        parsed_url = urlparse(self.START_URL)
-        robots_url = f"{parsed_url.scheme}://{parsed_url.netloc}/robots.txt"
-        self.robots.set_url(robots_url)
-        try:
-            self.robots.read()
-            self.log(f"✅ robots.txt loaded from {robots_url}")
-        except Exception as e:
-            self.log(f"⚠️ Could not load robots.txt from {robots_url}: {e}")
-
-        # Rate limiting
-        self.rate_limiter = Semaphore(1)         # Limit concurrency
-        self.RATE_LIMIT_DELAY = 2                # Delay in seconds between requests
-
 
     def log(self, message):
         tqdm.write(message)
@@ -139,27 +121,22 @@ class KenyaLawWebCrawler:
             return None
 
     def download_file(self, url):
-        if not self.robots.can_fetch("*", url):
-            self.log(f"🚫 Blocked by robots.txt: {url}")
-            return None
+        max_attempts = 3
+        base_delay = 1  # base delay in seconds
 
-        base_delay = 1  # seconds
-
-        for attempt in range(1, self.RETRY_COUNT + 1):
-            with self.rate_limiter:
-                try:
-                    res = requests.get(url, headers=self.HEADERS, timeout=self.TIMEOUT)
-                    res.raise_for_status()
-                    return res
-                except Exception as e:
-                    delay = base_delay * (2 ** (attempt - 1)) + random.uniform(0, 0.5)
-                    self.log(f"⚠️ Retry {attempt} for {url}: {e} — backoff {delay:.2f}s")
-                    time.sleep(delay)
-                finally:
-                    time.sleep(self.RATE_LIMIT_DELAY)
+        for attempt in range(1, max_attempts + 1):
+            try:
+                res = requests.get(url, headers=self.HEADERS, timeout=self.TIMEOUT)
+                res.raise_for_status()
+                return res
+            except Exception as e:
+                delay = base_delay * (2 ** (attempt - 1)) + random.uniform(0, 0.5)
+                self.log(f"⚠️ Attempt {attempt} failed for {url}: {e} — retrying in {delay:.2f}s")
+                time.sleep(delay)
 
         self.log(f"❌ All retries failed for {url}")
         return None
+
 
     def sanitize_filename(self, text):
         text = re.sub(r"[^\w\-]+", "_", text)
@@ -344,9 +321,6 @@ class KenyaLawWebCrawler:
 
         self.log(f"🔎 Crawling (depth={current_depth}): {current_url}")
         try:
-            if not self.robots.can_fetch("*", current_url):
-                self.log(f"🚫 Blocked by robots.txt: {current_url}")
-                return
             res = requests.get(current_url, headers=self.HEADERS, timeout=self.TIMEOUT)
             res.raise_for_status()
         except Exception as e:
