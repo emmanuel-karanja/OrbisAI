@@ -381,7 +381,7 @@ class KenyaLawWebCrawler:
 def parse_args():
     parser = argparse.ArgumentParser(description="Kenya Law Crawler")
     parser.add_argument("--url", type=str, default="http://www.kenyalaw.org/lex//index.xql" , help="Starting URL")
-    parser.add_argument("--depth", type=int, default=3, help="Max crawl depth")
+    parser.add_argument("--depth", type=int, default=5, help="Max crawl depth")
     parser.add_argument("--workers", type=int, default=5, help="Max worker threads")
     parser.add_argument("--output", type=str, default="C:\\Users\\ZBOOK\\Downloads\\kenya_laws", help="Download output directory")
     return parser.parse_args()
@@ -390,8 +390,8 @@ if __name__ == "__main__":
     args = parse_args()
     crawler = KenyaLawWebCrawler(
         start_url=args.url,
-        max_depth=5,
+        max_depth=args.depth,
         download_root=args.output,
-        max_workers=10
+        max_workers=args.workers
     )
     crawler.run()
