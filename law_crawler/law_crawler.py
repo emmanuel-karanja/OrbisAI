@@ -19,6 +19,7 @@ from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from selenium.common.exceptions import WebDriverException
 from hashlib import sha256
+import random
 
 class KenyaLawWebCrawler:
     def __init__(self, start_url, max_depth=3, download_root="kenya_laws", max_workers=5):
@@ -120,15 +121,22 @@ class KenyaLawWebCrawler:
             return None
 
     def download_file(self, url):
-        for attempt in range(1, self.RETRY_COUNT + 1):
+        max_attempts = 3
+        base_delay = 1  # base delay in seconds
+
+        for attempt in range(1, max_attempts + 1):
             try:
                 res = requests.get(url, headers=self.HEADERS, timeout=self.TIMEOUT)
                 res.raise_for_status()
                 return res
             except Exception as e:
-                self.log(f"⚠️ Retry {attempt} for {url}: {e}")
-                time.sleep(2 ** attempt)
+                delay = base_delay * (2 ** (attempt - 1)) + random.uniform(0, 0.5)
+                self.log(f"⚠️ Attempt {attempt} failed for {url}: {e} — retrying in {delay:.2f}s")
+                time.sleep(delay)
+
+        self.log(f"❌ All retries failed for {url}")
         return None
+
 
     def sanitize_filename(self, text):
         text = re.sub(r"[^\w\-]+", "_", text)
