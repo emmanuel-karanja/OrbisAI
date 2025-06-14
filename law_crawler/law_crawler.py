@@ -20,6 +20,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from selenium.common.exceptions import WebDriverException
 from hashlib import sha256
 import random
+from logger import setup_logger
 
 class KenyaLawWebCrawler:
     def __init__(self, start_url, max_depth=3, download_root="kenya_laws", max_workers=5):
@@ -35,6 +36,7 @@ class KenyaLawWebCrawler:
         self.TIMEOUT = 10
         self.RETRY_COUNT = 3
         self.MAX_WORKERS = max_workers
+        self.logger=setup_logger("KenyaLawWebCralwer",log_to_file=True)
 
         os.makedirs(self.PDF_DIR, exist_ok=True)
         os.makedirs(self.DOCX_DIR, exist_ok=True)
@@ -57,6 +59,9 @@ class KenyaLawWebCrawler:
         self.load_existing_index()
 
     def log(self, message):
+        # Remove emojis for clean logging
+        clean_message = message.encode("ascii", "ignore").decode()
+        self.logger.info(clean_message)
         tqdm.write(message)
 
     def file_hash(self, content):
