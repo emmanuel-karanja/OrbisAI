@@ -36,6 +36,7 @@ class KenyaLawWebCrawler:
         self.MAX_WORKERS = max_workers
 
         os.makedirs(self.PDF_DIR, exist_ok=True)
+        os.makedirs(self.DOCX_DIR, exist_ok=True)
         os.makedirs(self.HTML_DIR, exist_ok=True)
         os.makedirs(self.DOWNLOAD_ROOT, exist_ok=True)
 
@@ -284,7 +285,7 @@ class KenyaLawWebCrawler:
         fname = os.path.basename(link).split("?")[0]
         if not fname.lower().endswith(".docx"):
             fname += ".docx"
-        path = os.path.join(self.DOCX_DIR, fname)  # Still saving under PDF_DIR
+        path = os.path.join(self.DOCX_DIR, fname)  # Still saving under DOCX_DIR
 
         with self.downloaded_lock:
             if os.path.exists(path) or fname in self.downloaded_files:
@@ -319,14 +320,17 @@ class KenyaLawWebCrawler:
                 f.write(f"[FAIL] {current_url}: {e}\n")
             return
 
+        # Parses HTML into a parse tree made of python objects that mirrors the document structure
         soup = BeautifulSoup(res.text, "html.parser")
 
+        # Get alll the hyperlinks
         for a in soup.find_all("a", href=True):
             href = a["href"]
             link = urljoin(current_url, href)
             if not link.startswith("http"):
                 continue
-
+ 
+            # Select pdf or docx or any page that has akn or ends with akn string format, and persist it
             if ".pdf" in link.lower():
                 fname = self.save_pdf(link, current_url)
                 if fname:
@@ -343,7 +347,7 @@ class KenyaLawWebCrawler:
                 info = self.save_akn_html(link, current_url)
                 if info:
                     self.save_index_if_needed(info)
-
+            # Limit to the same domain
             elif urlparse(link).netloc == urlparse(self.START_URL).netloc:
                 with self.visited_lock:
                     if link not in self.visited_urls:
@@ -354,6 +358,7 @@ class KenyaLawWebCrawler:
         self.log("🚀 Starting DFS crawl...")
         start_time = datetime.now()
 
+        # Initiate the DFS crawl
         stack = [(self.START_URL, 0)]
         with ThreadPoolExecutor(max_workers=self.MAX_WORKERS) as executor:
             while stack:
