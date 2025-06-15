@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 import torch
 
 # Load environment variables
-load_dotenv()
+load_dotenv(override=True)
 
 # Set Torch thread count
 torch.set_num_threads(int(os.getenv("TORCH_NUM_THREADS", 1)))

@@ -39,10 +39,13 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - N8N_LOG_WEBHOOK=http://n8n:5678/webhook/log
+    env_file:
+      - ./ingestion-service/.env         # 👈 This loads your Hugging Face model vars
     command: uvicorn main:app --host 0.0.0.0 --port 8001 --log-level info --reload
     restart: unless-stopped
     volumes:
       - ~/.cache/huggingface:/root/.cache/huggingface
+
 
   streamlit:
     build: ./streamlit-app
