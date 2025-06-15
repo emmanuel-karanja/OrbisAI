@@ -12,7 +12,7 @@ class QdrantVectorDB(VectorDBInterface):
         self.client = QdrantClient(host=host, port=port)
 
         if self.collection_name not in [col.name for col in self.client.get_collections().collections]:
-            self.client.create_collection(
+            self.client.recreate_collection(
                 collection_name=self.collection_name,
                 vectors_config=VectorParams(size=vector_size, distance=Distance.COSINE),
             )

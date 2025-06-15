@@ -12,3 +12,4 @@ __pycache__/
 data/
 node_modules/
 logs/
+models/

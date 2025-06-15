@@ -1,5 +1,6 @@
 import os
 import base64
+import uuid
 from typing import List
 from transformers import pipeline
 from sentence_transformers import SentenceTransformer
@@ -20,11 +21,12 @@ torch.set_num_threads(int(os.getenv("TORCH_NUM_THREADS", 1)))
 # Configuration from environment
 BATCH_SIZE = int(os.getenv("EMBED_BATCH_SIZE", 50))
 SUMMARY_CHUNK_SIZE = int(os.getenv("SUMMARY_CHUNK_SIZE", 500))
-SENTENCE_MODEL = os.getenv("SENTENCE_MODEL", "all-MiniLM-L6-v2")
+SENTENCE_MODEL = os.getenv("SENTENCE_MODEL", "sentence-transformers/paraphrase-MiniLM-L12-v2")
 SUMMARIZER_MODEL = os.getenv("SUMMARIZER_MODEL", "sshleifer/distilbart-cnn-12-6")
 QA_MODEL = os.getenv("QA_MODEL", "deepset/roberta-base-squad2")
 
-logger = setup_logger(name="ingestion-service")
+LOG_DIR = os.getenv("LOG_DIR", "logs")
+logger = setup_logger(name="ingestion-service", log_dir=LOG_DIR,log_to_file=True)
 
 
 class IngestService:
@@ -35,12 +37,16 @@ class IngestService:
         self.model = SentenceTransformer(SENTENCE_MODEL)
         logger.info("SentenceTransformer loaded.")
 
+        logger.info(f"MODEL: {self.model}.MODEL dimension...{self.model.get_sentence_embedding_dimension()}")
+
         logger.info("Loading summarizer pipeline...")
         self.summarizer = pipeline("summarization", model=SUMMARIZER_MODEL)
         logger.info("Summarizer pipeline loaded.")
+        logger.info(f"SUMMARIZER MODEL: {self.summarizer}")
 
         logger.info("Loading QA pipeline...")
         self.qa_pipeline = pipeline("question-answering", model=QA_MODEL, tokenizer=QA_MODEL)
+        logger.info(f"QA MODEL: {self.qa_pipeline}")
         logger.info("QA pipeline loaded.")
 
         logger.info("Connecting to vector database (Qdrant)...")
@@ -114,7 +120,9 @@ class IngestService:
                     logger.warning(f"No embeddings returned for batch starting at chunk {i}, skipping.")
                     continue
 
-                batch_ids = [f"{request.filename}_chunk_{i + idx}" for idx in range(len(batch_chunks))]
+                # 🔄 Generate UUIDs instead of filename-based IDs
+                batch_ids = [str(uuid.uuid4()) for _ in range(len(batch_chunks))]
+
                 self.vector_db.add_documents(
                     documents=batch_chunks,
                     embeddings=batch_embeddings,
@@ -132,7 +140,7 @@ class IngestService:
                 self.vector_db.add_documents(
                     documents=[summary],
                     embeddings=[summary_embedding[0]],
-                    ids=[f"{request.filename}_summary"],
+                    ids=[str(uuid.uuid4())],
                     metadatas=[{"doc_name": request.filename, "page": 0, "paragraph": 0, "summary": True}]
                 )
             else:
