@@ -42,15 +42,15 @@ class QdrantVectorDB(VectorDBInterface):
             with_payload=True
         )
 
-        documents = [hit.payload.get("document", "") for hit in search_result]
-        metadatas = [{k: v for k, v in hit.payload.items() if k != "document"} for hit in search_result]
-        distances = [hit.score for hit in search_result]
+        results = []
+        for hit in search_result:
+            results.append({
+                "document": hit.payload.get("document", ""),
+                "metadata": {k: v for k, v in hit.payload.items() if k != "document"},
+                "score": 1 - hit.score  # convert distance to similarity
+            })
 
-        return {
-            "documents": [documents],    # wrap in list to match batching logic in IngestService
-            "metadatas": [metadatas],
-            "distances": [distances]
-        }
+        return {"results": results}
 
     def get_documents(self, where: Dict = None, include: List[str] = ["documents", "metadatas"]) -> Dict:
         filter_obj = None

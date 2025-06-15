@@ -23,7 +23,7 @@ BATCH_SIZE = int(os.getenv("EMBED_BATCH_SIZE", 50))
 SUMMARY_CHUNK_SIZE = int(os.getenv("SUMMARY_CHUNK_SIZE", 500))
 SENTENCE_MODEL = os.getenv("SENTENCE_MODEL", "sentence-transformers/all-mpnet-base-v2")
 SUMMARIZER_MODEL = os.getenv("SUMMARIZER_MODEL", "sshleifer/distilbart-cnn-12-6")
-QA_MODEL = os.getenv("QA_MODEL", "deepset/roberta-base-squad2")
+QA_MODEL = os.getenv("QA_MODEL", "deepset/roberta-large-squad2")
 
 LOG_DIR = os.getenv("LOG_DIR", "logs")
 logger = setup_logger(name="ingestion-service", log_dir=LOG_DIR,log_to_file=True)
@@ -173,39 +173,90 @@ class IngestService:
     def query_docs(self, request):
         logger.info(f"Received query: {request.question}")
 
+        # Generate question embedding
         question_embedding = self.batch_embed_texts([request.question])[0]
-        results = self.vector_db.query(question_embedding, top_k=3)
+        results = self.vector_db.query(question_embedding, top_k=10)  # Fetch more results for better filtering
 
-        documents = results["results"]
+        logger.info(f"Raw query results: {results}")
+
+        # Filter out irrelevant results based on cosine similarity
+        filtered_docs = [
+            {"document": doc, "metadata": metadata, "score": score}
+            for doc, metadata, score in zip(
+                results.get("documents", [])[0], 
+                results.get("metadatas", [])[0], 
+                results.get("distances", [])[0]
+            )
+            if score < 0.3  # Adjust threshold based on requirements
+        ]
+
+        if not filtered_docs:
+            logger.warning("No sufficiently relevant results found.")
+            return {
+                "question": request.question,
+                "answer": "No relevant information found.",
+                "score": 0,
+                "context": [],
+                "summary": "",
+                "sources": [],
+                "ranked_matches": []
+            }
+
+        # Get summaries from the database
         summary_docs = self.vector_db.get_documents(where={"summary": True})
-        summary_text = summary_docs["documents"][0] if summary_docs["documents"] else ""
+        summary_text = summary_docs.get("documents", [""])[0] if summary_docs.get("documents") else ""
 
+        # Prepare context for QA
         context_parts = []
         if summary_text:
             context_parts.append("Summary:\n" + summary_text)
-        context_parts.append("Details:\n" + "\n".join([doc["document"] for doc in documents]))
+        for doc in filtered_docs:
+            context_parts.append(doc["document"])
         context = "\n\n".join(context_parts)
 
         logger.info("Running QA pipeline...")
-        answer = self.qa_pipeline(question=request.question, context=context)
+        logger.info(f"QA context length: {len(context.split())} words")
+        
+        try:
+            # Run the QA pipeline on the prepared context
+            answer = self.qa_pipeline(question=request.question, context=context)
+            logger.info(f"RAW QA answer: {answer}")
 
-        logger.info("Query processed successfully")
-        return {
-            "question": request.question,
-            "answer": answer["answer"],
-            "score": answer["score"],
-            "context": [doc["document"] for doc in documents],
-            "summary": summary_text,
-            "sources": [doc["metadata"] for doc in documents],
-            "ranked_matches": [
-                {
-                    "text": doc["document"],
-                    "metadata": doc["metadata"],
-                    "similarity": doc.get("score")
-                }
-                for doc in documents
-            ]
-        }
+            # Handle cases where no answer is confidently found
+            if not answer.get("answer", "").strip():
+                logger.warning("QA model returned an empty answer.")
+                answer_text = "I'm not sure based on the available information."
+            else:
+                answer_text = answer["answer"]
+
+            return {
+                "question": request.question,
+                "answer": answer_text,
+                "score": answer.get("score", 0),
+                "context": [doc["document"] for doc in filtered_docs],
+                "summary": summary_text,
+                "sources": [doc["metadata"] for doc in filtered_docs],
+                "ranked_matches": [
+                    {
+                        "text": doc["document"],
+                        "metadata": doc["metadata"],
+                        "similarity": doc["score"]
+                    }
+                    for doc in filtered_docs
+                ]
+            }
+
+        except Exception as e:
+            logger.error(f"QA pipeline error: {e}")
+            return {
+                "question": request.question,
+                "answer": "An error occurred while processing your query.",
+                "score": 0,
+                "context": [],
+                "summary": summary_text,
+                "sources": [],
+                "ranked_matches": []
+            }
 
     def list_all_documents(self):
         try:
