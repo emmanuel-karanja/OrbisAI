@@ -1,0 +1,45 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*.so
+*.pyd
+*.pyo
+
+# Environment
+.env
+.venv/
+env/
+venv/
+
+# Logs
+logs/
+*.log
+failures.log
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+
+# Output folders
+kenya_laws/
+downloads/
+output/
+build/
+dist/
+
+# Test cache
+.pytest_cache/
+.coverage
+.tox/
+.nox/
+
+# Index cache
+index.json
+
+# Web driver binaries (if any manually added)
+chromedriver.exe
+chromedriver

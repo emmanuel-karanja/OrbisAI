@@ -22,21 +22,40 @@ from hashlib import sha256
 import random
 from logger import setup_logger
 
+from dotenv import load_dotenv
+load_dotenv()
+
+import os
+
+# Externalized configs
+DEFAULT_START_URL = os.getenv("START_URL", "http://www.kenyalaw.org/lex//index.xql")
+DEFAULT_DEPTH = int(os.getenv("MAX_DEPTH", 5))
+DEFAULT_WORKERS = int(os.getenv("MAX_WORKERS", 5))
+DEFAULT_DOWNLOAD_ROOT = os.getenv("DOWNLOAD_ROOT", "./kenya_laws")
+
+DEFAULT_USER_AGENT = os.getenv("USER_AGENT", "Mozilla/5.0")
+DEFAULT_TIMEOUT = int(os.getenv("TIMEOUT", 10))
+DEFAULT_RETRY_COUNT = int(os.getenv("RETRY_COUNT", 3))
+DEFAULT_RATE_LIMIT_DELAY = float(os.getenv("RATE_LIMIT_DELAY", 1.0))
+
+
 class KenyaLawWebCrawler:
     def __init__(self, start_url, max_depth=3, download_root="kenya_laws", max_workers=5):
         self.START_URL = start_url
         self.MAX_DEPTH = max_depth
         self.DOWNLOAD_ROOT = download_root
-        self.PDF_DIR = os.path.join(download_root, "pdfs")
-        self.DOCX_DIR = os.path.join(download_root, "docx")
-        self.HTML_DIR = os.path.join(download_root, "htmls")
-        self.LOG_FILE = os.path.join(download_root, "failures.log")
-        self.INDEX_JSON = os.path.join(download_root, "index.json")
-        self.HEADERS = {"User-Agent": "Mozilla/5.0"}
-        self.TIMEOUT = 10
-        self.RETRY_COUNT = 3
         self.MAX_WORKERS = max_workers
-        self.logger=setup_logger("KenyaLawWebCrawler",log_to_file=True)
+
+        self.PDF_DIR = os.path.join(self.DOWNLOAD_ROOT, "pdfs")
+        self.DOCX_DIR = os.path.join(self.DOWNLOAD_ROOT, "docx")
+        self.HTML_DIR = os.path.join(self.DOWNLOAD_ROOT, "htmls")
+        self.LOG_FILE = os.path.join(self.DOWNLOAD_ROOT, "failures.log")
+        self.INDEX_JSON = os.path.join(self.DOWNLOAD_ROOT, "index.json")
+
+        self.HEADERS = {"User-Agent": os.getenv("USER_AGENT", "Mozilla/5.0")}
+        self.TIMEOUT = int(os.getenv("REQUEST_TIMEOUT", 10))
+        self.RETRY_COUNT = int(os.getenv("RETRY_COUNT", 3))
+        self.logger = setup_logger("KenyaLawWebCrawler", log_to_file=True)
 
         os.makedirs(self.PDF_DIR, exist_ok=True)
         os.makedirs(self.DOCX_DIR, exist_ok=True)
@@ -58,12 +77,13 @@ class KenyaLawWebCrawler:
 
         self.load_existing_index()
 
+
     def log(self, message):
         # Remove emojis for clean logging
         clean_message = message.encode("ascii", "ignore").decode()
         self.logger.info(clean_message)
         tqdm.write(message)
-
+    
     def file_hash(self, content):
         return sha256(content).hexdigest()
 
@@ -398,14 +418,16 @@ class KenyaLawWebCrawler:
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Kenya Law Crawler")
-    parser.add_argument("--url", type=str, default="http://www.kenyalaw.org/lex//index.xql" , help="Starting URL")
-    parser.add_argument("--depth", type=int, default=5, help="Max crawl depth")
-    parser.add_argument("--workers", type=int, default=5, help="Max worker threads")
-    parser.add_argument("--output", type=str, default="C:\\Users\\ZBOOK\\Downloads\\kenya_laws", help="Download output directory")
+    parser.add_argument("--url", type=str, default=os.getenv("CRAWL_START_URL", "http://www.kenyalaw.org/lex//index.xql"), help="Starting URL")
+    parser.add_argument("--depth", type=int, default=int(os.getenv("CRAWL_MAX_DEPTH", 5)), help="Max crawl depth")
+    parser.add_argument("--workers", type=int, default=int(os.getenv("CRAWL_MAX_WORKERS", 5)), help="Max worker threads")
+    parser.add_argument("--output", type=str, default=os.getenv("CRAWL_OUTPUT", os.path.join(os.getcwd(), "kenya_laws")), help="Download output directory")
     return parser.parse_args()
+
 
 if __name__ == "__main__":
     args = parse_args()
+    print(f"url:{args.url}")
     crawler = KenyaLawWebCrawler(
         start_url=args.url,
         max_depth=args.depth,
