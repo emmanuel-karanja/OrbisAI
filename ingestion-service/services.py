@@ -1,3 +1,4 @@
+import os
 import base64
 from typing import List
 from transformers import pipeline
@@ -5,16 +6,25 @@ from sentence_transformers import SentenceTransformer
 from logger import setup_logger
 from document_processor import DocumentProcessor
 from redis_client import r
-from qdrant_db_client import QdrantVectorDB  # Replaces ChromaDBClient
+from qdrant_db_client import QdrantVectorDB
 from fastapi.responses import JSONResponse
+from dotenv import load_dotenv
 import torch
 
-torch.set_num_threads(1)
+# Load environment variables
+load_dotenv()
+
+# Set Torch thread count
+torch.set_num_threads(int(os.getenv("TORCH_NUM_THREADS", 1)))
+
+# Configuration from environment
+BATCH_SIZE = int(os.getenv("EMBED_BATCH_SIZE", 50))
+SUMMARY_CHUNK_SIZE = int(os.getenv("SUMMARY_CHUNK_SIZE", 500))
+SENTENCE_MODEL = os.getenv("SENTENCE_MODEL", "all-MiniLM-L6-v2")
+SUMMARIZER_MODEL = os.getenv("SUMMARIZER_MODEL", "sshleifer/distilbart-cnn-12-6")
+QA_MODEL = os.getenv("QA_MODEL", "deepset/roberta-base-squad2")
 
 logger = setup_logger(name="ingestion-service")
-
-BATCH_SIZE = 50
-SUMMARY_CHUNK_SIZE = 500
 
 
 class IngestService:
@@ -22,23 +32,20 @@ class IngestService:
         logger.info("Initializing services...")
 
         logger.info("Loading SentenceTransformer model...")
-        self.model = SentenceTransformer("all-MiniLM-L6-v2")
+        self.model = SentenceTransformer(SENTENCE_MODEL)
         logger.info("SentenceTransformer loaded.")
 
         logger.info("Loading summarizer pipeline...")
-        self.summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6")
+        self.summarizer = pipeline("summarization", model=SUMMARIZER_MODEL)
         logger.info("Summarizer pipeline loaded.")
 
         logger.info("Loading QA pipeline...")
-        self.qa_pipeline = pipeline(
-            "question-answering",
-            model="deepset/roberta-base-squad2",
-            tokenizer="deepset/roberta-base-squad2"
-        )
+        self.qa_pipeline = pipeline("question-answering", model=QA_MODEL, tokenizer=QA_MODEL)
         logger.info("QA pipeline loaded.")
 
         logger.info("Connecting to vector database (Qdrant)...")
-        self.vector_db = QdrantVectorDB()  # Use Qdrant instead of ChromaDB
+        self.vector_db = QdrantVectorDB()
+        logger.info("Vector DB initialized.")
 
         logger.info("Instantiating DocumentProcessor...")
         self.doc_processor = DocumentProcessor()
@@ -51,7 +58,7 @@ class IngestService:
             return []
 
     def hierarchical_summarize(self, text: str, chunk_size=SUMMARY_CHUNK_SIZE) -> str:
-        chunks = [text[i: i + chunk_size] for i in range(0, len(text), chunk_size)]
+        chunks = [text[i:i + chunk_size] for i in range(0, len(text), chunk_size)]
         logger.info(f"Summarizing in {len(chunks)} chunks")
 
         summaries = []
@@ -63,14 +70,14 @@ class IngestService:
                 summary = ""
             summaries.append(summary)
 
-        combined_summary_text = " ".join(summaries)
+        combined_summary = " ".join(summaries)
         logger.info("Summarizing combined summaries")
 
         try:
-            final_summary = self.summarizer(combined_summary_text, max_length=100, min_length=30, do_sample=False)[0]['summary_text']
+            final_summary = self.summarizer(combined_summary, max_length=100, min_length=30, do_sample=False)[0]['summary_text']
         except Exception as e:
             logger.error(f"Error summarizing combined text: {e}")
-            final_summary = combined_summary_text
+            final_summary = combined_summary
 
         return final_summary
 
@@ -99,8 +106,8 @@ class IngestService:
             logger.info(f"Embedding {len(chunks)} chunks in batches of {BATCH_SIZE}...")
 
             for i in range(0, len(chunks), BATCH_SIZE):
-                batch_chunks = chunks[i: i + BATCH_SIZE]
-                batch_metadatas = metadatas[i: i + BATCH_SIZE]
+                batch_chunks = chunks[i:i + BATCH_SIZE]
+                batch_metadatas = metadatas[i:i + BATCH_SIZE]
 
                 batch_embeddings = self.batch_embed_texts(batch_chunks)
                 if not batch_embeddings:
@@ -112,12 +119,11 @@ class IngestService:
                     documents=batch_chunks,
                     embeddings=batch_embeddings,
                     ids=batch_ids,
-                    metadatas=batch_metadatas,
+                    metadatas=batch_metadatas
                 )
 
             full_text = "\n\n".join([p["text"] for p in pages])
             logger.info("Generating hierarchical summary...")
-
             summary = self.hierarchical_summarize(full_text)
 
             logger.info("Embedding summary...")
@@ -127,7 +133,7 @@ class IngestService:
                     documents=[summary],
                     embeddings=[summary_embedding[0]],
                     ids=[f"{request.filename}_summary"],
-                    metadatas=[{"doc_name": request.filename, "page": 0, "paragraph": 0, "summary": True}],
+                    metadatas=[{"doc_name": request.filename, "page": 0, "paragraph": 0, "summary": True}]
                 )
             else:
                 logger.warning("No embedding returned for summary, skipping summary storage.")
@@ -153,7 +159,6 @@ class IngestService:
         logger.info(f"Received query: {request.question}")
 
         question_embedding = self.batch_embed_texts([request.question])[0]
-
         results = self.vector_db.query(question_embedding, top_k=3)
 
         documents = results["results"]
@@ -181,7 +186,7 @@ class IngestService:
                 {
                     "text": doc["document"],
                     "metadata": doc["metadata"],
-                    "similarity": doc.get("score")  # Qdrant returns similarity score
+                    "similarity": doc.get("score")
                 }
                 for doc in documents
             ]

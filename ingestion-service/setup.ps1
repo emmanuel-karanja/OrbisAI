@@ -5,7 +5,7 @@ python -m venv venv
 & .\venv\Scripts\Activate.ps1
 
 # Step 3: Install dependencies (edit/add as needed)
-pip install requests beautifulsoup4 selenium python-dotenv tqdm webdriver-manager
+
 
 # Step 4: Save installed packages to requirements.txt
 pip freeze > requirements.txt

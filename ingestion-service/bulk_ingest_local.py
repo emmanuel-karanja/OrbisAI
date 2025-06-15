@@ -2,8 +2,15 @@ import os
 import base64
 import requests
 import argparse
+from dotenv import load_dotenv
 
-def ingest_law_documents(source_dir, api_url="http://localhost:8001/ingest"):
+# Load environment variables from .env file
+load_dotenv()
+
+DEFAULT_API_URL = os.getenv("INGEST_API_URL", "http://localhost:8001/ingest")
+DEFAULT_DOCS_SOURCE_dir=os.getenv("DOCS_SOURCE_DIR","C:/Users/ZBOOK/Downloads/kenya_laws")
+
+def ingest_law_documents(source_dir, api_url=DEFAULT_API_URL):
     """
     Ingests all files from all subdirectories under the given source directory.
 
@@ -35,11 +42,7 @@ def ingest_law_documents(source_dir, api_url="http://localhost:8001/ingest"):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Ingest documents from a given directory recursively.")
     parser.add_argument("source_dir", help="Path to the root directory containing documents to ingest.")
-    parser.add_argument("--api", default="http://localhost:8001/ingest", help="Ingestion API endpoint.")
+    parser.add_argument("--api", default=DEFAULT_API_URL, help="Ingestion API endpoint.")
     args = parser.parse_args()
 
     ingest_law_documents(args.source_dir, args.api)
-
-#EXAMPLE USAGE
-#python ingest_law_documents.py kenya_laws
-#python ingest_law_documents.py kenya_laws --api http://localhost:8080/ingest

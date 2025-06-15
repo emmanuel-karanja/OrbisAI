@@ -14,5 +14,5 @@ pdfplumber
 numpy<2
 sentence-transformers
 qdrant-client
-
+python-dotenv==1.1.0
 

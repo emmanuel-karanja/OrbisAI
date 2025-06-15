@@ -7,7 +7,7 @@ from vector_db_interface import VectorDBInterface
 
 
 class QdrantVectorDB(VectorDBInterface):
-    def __init__(self, collection_name: str = "documents", vector_size: int = 768, host: str = "localhost", port: int = 6333):
+    def __init__(self, collection_name: str = "documents", vector_size: int = 768, host: str = "qdrant", port: int = 6333):
         self.collection_name = collection_name
         self.client = QdrantClient(host=host, port=port)
 

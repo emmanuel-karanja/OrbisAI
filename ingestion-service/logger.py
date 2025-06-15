@@ -5,6 +5,11 @@ import requests
 import sys
 from pathlib import Path
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
 
 class WebhookLogHandler(logging.Handler):
     def __init__(self, webhook_url: str, service_name: str):
@@ -22,33 +27,43 @@ class WebhookLogHandler(logging.Handler):
             }
             requests.post(self.webhook_url, json=payload, timeout=2)
         except Exception:
-            pass  # Avoid log loop if webhook fails
+            pass  # Prevent logging loop on failure
 
-def setup_logger(name="app", level=logging.INFO, log_to_file=False, log_dir="logs") -> logging.Logger:
+
+def setup_logger(name="app", level=None, log_to_file=True, log_dir="logs") -> logging.Logger:
     logger = logging.getLogger(name)
-    logger.setLevel(level)
 
+    # Prevent duplicate handlers if logger is reused
     if logger.hasHandlers():
         return logger
+
+    # Resolve values from .env if not provided
+    level = level or os.getenv("LOG_LEVEL", "INFO").upper()
+    log_to_file = log_to_file if log_to_file is not None else os.getenv("LOG_TO_FILE", "true").lower() == "true"
+    log_dir = log_dir or os.getenv("LOG_DIR", "logs")
+
+    # Convert level to logging constant
+    numeric_level = getattr(logging, level, logging.INFO)
+    logger.setLevel(numeric_level)
 
     formatter = logging.Formatter(
         fmt="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S"
     )
 
-    # Console
+    # Console handler
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
 
-    # File (optional)
+    # File handler (if enabled)
     if log_to_file:
-        Path(log_dir).mkdir(exist_ok=True)
+        Path(log_dir).mkdir(parents=True, exist_ok=True)
         file_handler = logging.FileHandler(f"{log_dir}/{name}.log")
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
 
-    # Webhook (optional)
+    # Webhook logging (optional)
     webhook_url = os.getenv("N8N_LOG_WEBHOOK")
     if webhook_url:
         webhook_handler = WebhookLogHandler(webhook_url, service_name=name)
