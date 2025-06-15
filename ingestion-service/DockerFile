@@ -35,12 +35,7 @@ RUN set -e; \
     done
 
 # Copy application code
-COPY main.py .
-COPY models.py .
-COPY services.py .
-COPY logger.py .
-COPY extract.py .
-COPY redis_client.py .
+COPY . .
 
 # Optionally include static or config files
 # COPY static/ ./static/
