@@ -14,4 +14,6 @@ if (Test-Path ".\venv\Scripts\Activate.ps1") {
 
 # Start the FastAPI app with uvicorn
 Write-Host "🚀 Starting FastAPI app..."
-uvicorn main:app --host 0.0.0.0 --port 8001 --reload
+#uvicorn main:app --host 0.0.0.0 --port 8001 --reload
+
+docker-compose up --build
