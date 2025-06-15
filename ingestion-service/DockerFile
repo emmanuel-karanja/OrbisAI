@@ -39,6 +39,8 @@ COPY . .
 
 # Optionally include static or config files
 # COPY static/ ./static/
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('sentence-transformers/paraphrase-MiniLM-L12-v2')"
+
 
 # Expose FastAPI port
 EXPOSE 8001

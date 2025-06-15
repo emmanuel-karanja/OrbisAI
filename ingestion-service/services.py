@@ -33,12 +33,7 @@ class IngestService:
     def __init__(self):
         logger.info("Initializing services...")
 
-        logger.info("Loading SentenceTransformer model...")
-        self.model = SentenceTransformer(SENTENCE_MODEL)
-        logger.info("SentenceTransformer loaded.")
-
-        logger.info(f"MODEL: {self.model}.MODEL dimension...{self.model.get_sentence_embedding_dimension()}")
-
+        self.load_sentence_model()
         logger.info("Loading summarizer pipeline...")
         self.summarizer = pipeline("summarization", model=SUMMARIZER_MODEL)
         logger.info("Summarizer pipeline loaded.")
@@ -62,7 +57,18 @@ class IngestService:
         except Exception as e:
             logger.error(f"Embedding failed: {e}")
             return []
+        
+    def load_sentence_model(self):
+        logger.info("Loading SentenceTransformer model...")
+        try:
+            self.model = SentenceTransformer(SENTENCE_MODEL)
+            logger.info("Model downloaded and loaded successfully.")
+        except Exception as e:
+            logger.error(f"Error loading model {SENTENCE_MODEL}: {e}")
+            raise
 
+        logger.info(f"MODEL: {self.model}.MODEL dimension...{self.model.get_sentence_embedding_dimension()}")
+    
     def hierarchical_summarize(self, text: str, chunk_size=SUMMARY_CHUNK_SIZE) -> str:
         chunks = [text[i:i + chunk_size] for i in range(0, len(text), chunk_size)]
         logger.info(f"Summarizing in {len(chunks)} chunks")
