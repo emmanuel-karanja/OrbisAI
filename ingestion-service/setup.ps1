@@ -1,4 +1,5 @@
 # Step 1: Create virtual environment
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 python -m venv venv
 
 # Step 2: Activate the virtual environment
