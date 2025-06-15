@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 
 from models import IngestRequest, QueryRequest
 from logger import setup_logger
-from services import IngestService  # Assuming the filename is Kenya_Law_Crawler.py
+from services import IngestService 
 
 logger = setup_logger("ingestion-service-api")
 app = FastAPI()
