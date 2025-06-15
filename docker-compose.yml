@@ -1,14 +1,11 @@
-
 services:
-  chromadb:
-    image: ghcr.io/chroma-core/chroma:latest
-    container_name: chromadb
+  qdrant:
+    image: qdrant/qdrant
+    container_name: qdrant
     ports:
-      - "8000:8000"
+      - "6333:6333"
     volumes:
-      - chroma_data:/chroma/chroma
-    environment:
-      - IS_PERSISTENT=TRUE
+      - qdrant_data:/qdrant/storage
     restart: unless-stopped
 
   n8n:
@@ -27,14 +24,14 @@ services:
     volumes:
       - n8n_data:/home/node/.n8n
     depends_on:
-      - chromadb
+      - qdrant
     restart: unless-stopped
 
   ingestion:
     build: ./ingestion-service
     container_name: ingestion
     depends_on:
-      - chromadb
+      - qdrant
       - n8n
       - redis
     ports:
@@ -46,7 +43,6 @@ services:
     restart: unless-stopped
     volumes:
       - ~/.cache/huggingface:/root/.cache/huggingface
-    
 
   streamlit:
     build: ./streamlit-app
@@ -55,23 +51,14 @@ services:
       - "8501:8501"
     environment:
       - N8N_LOG_WEBHOOK=http://n8n:5678/webhook/log
-      
     command: streamlit run app.py --server.port=8501 --server.address=0.0.0.0
     depends_on:
       - n8n
       - redis
-      - chromadb
+      - qdrant
       - ingestion
     restart: unless-stopped
 
-  # ollama:
-  #   image: ollama/ollama
-  #   container_name: ollama
-  #   ports:
-  #     - "11434:11434"
-  #   volumes:
-  #     - ollama_data:/root/.ollama
-  #   restart: unless-stopped
   redis:
     image: redis:7
     command: ["redis-server", "--save", "900", "1", "--appendonly", "yes"]
@@ -80,9 +67,8 @@ services:
     volumes:
       - redis-data:/data
     restart: always
+
 volumes:
-  chroma_data:
+  qdrant_data:
   n8n_data:
   redis-data:
-  
-  # ollama_data:
