@@ -5,7 +5,7 @@ from sentence_transformers import SentenceTransformer
 from logger import setup_logger
 from document_processor import DocumentProcessor
 from redis_client import r
-from chroma_db_client import ChromaDBClient  # Custom client implementing VectorDBInterface
+from qdrant_db_client import QdrantVectorDB  # Replaces ChromaDBClient
 from fastapi.responses import JSONResponse
 import torch
 
@@ -37,8 +37,8 @@ class IngestService:
         )
         logger.info("QA pipeline loaded.")
 
-        logger.info("Connecting to vector database (ChromaDB)...")
-        self.vector_db = ChromaDBClient()
+        logger.info("Connecting to vector database (Qdrant)...")
+        self.vector_db = QdrantVectorDB()  # Use Qdrant instead of ChromaDB
 
         logger.info("Instantiating DocumentProcessor...")
         self.doc_processor = DocumentProcessor()
@@ -156,17 +156,14 @@ class IngestService:
 
         results = self.vector_db.query(question_embedding, top_k=3)
 
-        documents = results["documents"][0]
-        metadatas = results["metadatas"][0]
-        distances = results.get("distances", [[None]])[0]
-
+        documents = results["results"]
         summary_docs = self.vector_db.get_documents(where={"summary": True})
         summary_text = summary_docs["documents"][0] if summary_docs["documents"] else ""
 
         context_parts = []
         if summary_text:
             context_parts.append("Summary:\n" + summary_text)
-        context_parts.append("Details:\n" + "\n".join(documents))
+        context_parts.append("Details:\n" + "\n".join([doc["document"] for doc in documents]))
         context = "\n\n".join(context_parts)
 
         logger.info("Running QA pipeline...")
@@ -177,16 +174,16 @@ class IngestService:
             "question": request.question,
             "answer": answer["answer"],
             "score": answer["score"],
-            "context": documents,
+            "context": [doc["document"] for doc in documents],
             "summary": summary_text,
-            "sources": metadatas,
+            "sources": [doc["metadata"] for doc in documents],
             "ranked_matches": [
                 {
-                    "text": doc,
-                    "metadata": meta,
-                    "similarity": 1 - dist if dist is not None else None
+                    "text": doc["document"],
+                    "metadata": doc["metadata"],
+                    "similarity": doc.get("score")  # Qdrant returns similarity score
                 }
-                for doc, meta, dist in zip(documents, metadatas, distances)
+                for doc in documents
             ]
         }
 
