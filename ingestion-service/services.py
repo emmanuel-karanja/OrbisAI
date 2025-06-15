@@ -21,7 +21,7 @@ torch.set_num_threads(int(os.getenv("TORCH_NUM_THREADS", 1)))
 # Configuration from environment
 BATCH_SIZE = int(os.getenv("EMBED_BATCH_SIZE", 50))
 SUMMARY_CHUNK_SIZE = int(os.getenv("SUMMARY_CHUNK_SIZE", 500))
-SENTENCE_MODEL = os.getenv("SENTENCE_MODEL", "sentence-transformers/paraphrase-MiniLM-L12-v2")
+SENTENCE_MODEL = os.getenv("SENTENCE_MODEL", "sentence-transformers/all-mpnet-base-v2")
 SUMMARIZER_MODEL = os.getenv("SUMMARIZER_MODEL", "sshleifer/distilbart-cnn-12-6")
 QA_MODEL = os.getenv("QA_MODEL", "deepset/roberta-base-squad2")
 
@@ -61,6 +61,7 @@ class IngestService:
     def load_sentence_model(self):
         logger.info("Loading SentenceTransformer model...")
         try:
+            logger.info(f"Sentence Model: {SENTENCE_MODEL}")
             self.model = SentenceTransformer(SENTENCE_MODEL)
             logger.info("Model downloaded and loaded successfully.")
         except Exception as e:
