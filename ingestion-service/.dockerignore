@@ -13,3 +13,5 @@ data/
 node_modules/
 logs/
 models/
+venv/
+__pycache__

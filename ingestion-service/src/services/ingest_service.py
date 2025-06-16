@@ -2,117 +2,59 @@ import os
 import base64
 import uuid
 from typing import List
-from transformers import pipeline, AutoModelForQuestionAnswering, AutoTokenizer
-from sentence_transformers import SentenceTransformer
+from fastapi.responses import JSONResponse
+from dotenv import load_dotenv
 from utils.logger import setup_logger
 from utils.document_processor import DocumentProcessor
 from utils.redis_client import r
 from db.qdrant_db_client import QdrantVectorDB
-from fastapi.responses import JSONResponse
-from dotenv import load_dotenv
-import torch
-from sentence_transformers import CrossEncoder
-import numpy as np
-
+from ai_engine.ai_engine_interface import AIEngine  # Interface for AI abstraction
 
 # Load environment variables
 load_dotenv(override=True)
 
-# Set Torch thread count
+# Torch performance config
+import torch
 torch.set_num_threads(int(os.getenv("TORCH_NUM_THREADS", 1)))
 
-# Configuration from environment
+# Configuration
 BATCH_SIZE = int(os.getenv("EMBED_BATCH_SIZE", 50))
 SUMMARY_CHUNK_SIZE = int(os.getenv("SUMMARY_CHUNK_SIZE", 500))
-SENTENCE_MODEL = os.getenv("SENTENCE_MODEL", "nomic-ai/nomic-embed-text-v1")
-SUMMARIZER_MODEL = os.getenv("SUMMARIZER_MODEL", "sshleifer/distilbart-cnn-12-6")
-QA_MODEL = os.getenv("QA_MODEL", "allenai/longformer-base-4096")
 
 LOG_DIR = os.getenv("LOG_DIR", "logs")
 logger = setup_logger(name="ingestion-service", log_dir=LOG_DIR, log_to_file=True)
 
+
 class IngestService:
-    def __init__(self):
-        logger.info("Initializing services...")
-        self.load_sentence_model()
-        logger.info("Loading summarizer pipeline...")
-        self.summarizer = pipeline("summarization", model=SUMMARIZER_MODEL)
-        logger.info("Summarizer pipeline loaded.")
-        logger.info(f"SUMMARIZER MODEL: {self.summarizer}")
-        self.load_qa_model()
-        logger.info("Connecting to vector database (Qdrant)...")
+    def __init__(self, ai_engine: AIEngine):
+        logger.info("Initializing IngestService...")
+        self.ai_engine = ai_engine
         self.vector_db = QdrantVectorDB()
-        logger.info("Vector DB initialized.")
-        logger.info("Instantiating DocumentProcessor...")
         self.doc_processor = DocumentProcessor()
-        logger.info("Loading CrossEncoder model for reranking...")
-        self.cross_encoder = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
-        logger.info("CrossEncoder model loaded.")
 
     def batch_embed_texts(self, texts: List[str]) -> List[List[float]]:
         try:
-            # Apply E5 formatting: prefix queries and passages
-            formatted = [f"query: {t}" if t.endswith("?") else f"passage: {t}" for t in texts]
-            return self.model.encode(formatted).tolist()
+            return self.ai_engine.embed_texts(texts)
         except Exception as e:
             logger.error(f"Embedding failed: {e}")
             return []
-
-    def load_sentence_model(self):
-        logger.info("Loading SentenceTransformer model...")
-        try:
-            logger.info(f"Sentence Model: {SENTENCE_MODEL}")
-            self.model = SentenceTransformer(SENTENCE_MODEL,trust_remote_code=True)
-            logger.info("Model downloaded and loaded successfully.")
-        except Exception as e:
-            logger.error(f"Error loading model {SENTENCE_MODEL}: {e}")
-            raise
-        logger.info(f"Model embedding dim: {self.model.get_sentence_embedding_dimension()}")
-
-    def load_qa_model(self):
-        logger.info("Loading QA pipeline...")
-        try:
-            tokenizer = AutoTokenizer.from_pretrained(QA_MODEL)
-            model = AutoModelForQuestionAnswering.from_pretrained(QA_MODEL)
-            device = 0 if torch.cuda.is_available() else -1
-            self.qa_pipeline = pipeline("question-answering", model=model, tokenizer=tokenizer, device=device)
-            self.qa_tokenizer = tokenizer
-            logger.info("QA pipeline loaded successfully.")
-        except Exception as e:
-            logger.error(f"Failed to load QA model '{QA_MODEL}': {e}")
-            raise
 
     def hierarchical_summarize(self, text: str, chunk_size=SUMMARY_CHUNK_SIZE) -> str:
         chunks = [text[i:i + chunk_size] for i in range(0, len(text), chunk_size)]
         summaries = []
         for i, chunk in enumerate(chunks):
             try:
-                chunk_length = len(chunk.split())
-                max_len = min(500, int(chunk_length * 0.5))  # Make summary about half the length
-                max_len = max(max_len, 30)  # Avoid too-short max length
-                summary = self.summarizer(chunk, max_length=max_len, min_length=20, do_sample=False)[0]['summary_text']
-
+                summary = self.ai_engine.summarize(chunk)
             except Exception as e:
                 logger.error(f"Error summarizing chunk {i}: {e}")
                 summary = ""
             summaries.append(summary)
         combined_summary = " ".join(summaries)
         try:
-            combined_length = len(combined_summary.split())
-            final_max_len = min(100, int(combined_length * 0.5))
-            final_max_len = max(final_max_len, 30)
-
-            final_summary = self.summarizer(
-                combined_summary,
-                max_length=final_max_len,
-                min_length=20,
-                do_sample=False
-            )[0]['summary_text']
-
+            return self.ai_engine.summarize(combined_summary)
         except Exception as e:
             logger.error(f"Error summarizing combined text: {e}")
-            final_summary = combined_summary
-        return final_summary
+            return combined_summary
 
     def delete_docs_by_name(self, doc_name: str):
         self.vector_db.delete_documents({"doc_name": doc_name})
@@ -128,10 +70,13 @@ class IngestService:
                 logger.info(msg)
                 r.set(doc_key, f"Skipped: {msg}")
                 return
+
             pages = self.doc_processor.extract_text_and_metadata(request.filename, request.content)
             for page in pages:
                 page["doc_name"] = request.filename
+
             chunks, metadatas = self.doc_processor.chunk_text_with_metadata(pages)
+
             for i in range(0, len(chunks), BATCH_SIZE):
                 batch_chunks = chunks[i:i + BATCH_SIZE]
                 batch_metadatas = metadatas[i:i + BATCH_SIZE]
@@ -146,6 +91,7 @@ class IngestService:
                     ids=batch_ids,
                     metadatas=batch_metadatas
                 )
+
             full_text = "\n\n".join([p["text"] for p in pages])
             summary = self.hierarchical_summarize(full_text)
             summary_embedding = self.batch_embed_texts([summary])
@@ -154,12 +100,19 @@ class IngestService:
                     documents=[summary],
                     embeddings=[summary_embedding[0]],
                     ids=[str(uuid.uuid4())],
-                    metadatas=[{"doc_name": request.filename, "page": 0, "paragraph": 0, "summary": True}]
+                    metadatas=[{
+                        "doc_name": request.filename,
+                        "page": 0,
+                        "paragraph": 0,
+                        "summary": True
+                    }]
                 )
             else:
                 logger.warning("No embedding returned for summary, skipping summary storage.")
+
             self.doc_processor.save_document_checksum(request.filename, content_bytes)
             r.set(doc_key, "completed")
+
         except Exception as e:
             error_msg = f"Ingestion failed for {request.filename}: {e}"
             logger.error(error_msg)
@@ -171,8 +124,6 @@ class IngestService:
         if status_msg:
             return {"status": "ok", "message": status_msg}
         return JSONResponse(status_code=404, content={"status": "not_found", "message": "No status available"})
-
-    # Replace your `query_docs` method with this improved version:
 
     def query_docs(self, request):
         logger.info(f"Received query: {request.question}")
@@ -188,7 +139,6 @@ class IngestService:
             distances = results.get("distances", [[]])[0]
             summaries = results.get("summaries", [])
 
-            # Convert distance to similarity and filter
             all_docs = [
                 {
                     "document": doc,
@@ -211,13 +161,9 @@ class IngestService:
                     "ranked_matches": []
                 }
 
-            # Sort docs by score descending
             all_docs = sorted(all_docs, key=lambda d: d["score"], reverse=True)
-            # Rerank with cross-encoder
-            all_docs = self.rerank_with_cross_encoder(request.question, all_docs)
+            all_docs = self.ai_engine.rerank(request.question, all_docs)
 
-
-            # Build QA context
             summary_text = "\n\n".join(summaries)
             context_parts = []
             token_count = 0
@@ -236,10 +182,9 @@ class IngestService:
             context = "\n\n".join(context_parts)
             logger.info(f"QA context contains ~{token_count} tokens")
 
-            answer = self.qa_pipeline(question=request.question, context=context)
+            answer = self.ai_engine.answer_question(request.question, context)
             answer_text = answer.get("answer", "").strip() or "I'm not sure based on the available information."
             rag_metrics = self.compute_rag_metrics(answer_text, [doc["document"] for doc in all_docs])
-
 
             return {
                 "question": request.question,
@@ -256,7 +201,7 @@ class IngestService:
                     }
                     for doc in all_docs
                 ],
-                "rag_metrics":rag_metrics
+                "rag_metrics": rag_metrics
             }
 
         except Exception as e:
@@ -280,14 +225,7 @@ class IngestService:
         except Exception as e:
             logger.error(f"Failed to list documents: {e}")
             return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
-    def rerank_with_cross_encoder(self, query: str, docs: List[dict]) -> List[dict]:
-        pairs = [[query, doc["document"]] for doc in docs]
-        scores = self.cross_encoder.predict(pairs)
 
-        for doc, score in zip(docs, scores):
-            doc["rerank_score"] = score
-
-        return sorted(docs, key=lambda x: x["rerank_score"], reverse=True)
     def compute_rag_metrics(self, answer: str, docs: List[str]) -> dict:
         answer_lower = answer.lower()
         context_hits = sum(1 for doc in docs if answer_lower in doc.lower())

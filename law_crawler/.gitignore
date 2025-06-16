@@ -43,3 +43,8 @@ index.json
 # Web driver binaries (if any manually added)
 chromedriver.exe
 chromedriver
+
+venv/
+__pycache__
+
+logs/

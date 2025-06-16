@@ -7,6 +7,9 @@ from models.local_models import IngestRequest, QueryRequest
 from utils.logger import setup_logger
 from services.ingest_service import IngestService
 
+# You can switch this to OpenAIAIEngine instead for remote use
+from ai_engine.local_ai_engine import LocalAIEngine  # or: from ai.openai_ai_engine import OpenAIAIEngine
+
 
 class IngestionAPI:
     def __init__(self):
@@ -18,8 +21,9 @@ class IngestionAPI:
 
         @self.app.on_event("startup")
         async def startup_event():
-            self.logger.info("Initializing IngestService...")
-            self.ingest_service = IngestService()
+            self.logger.info("Initializing AI engine...")
+            ai_engine = LocalAIEngine()  # <-- switch here if needed
+            self.ingest_service = IngestService(ai_engine=ai_engine)
             self.logger.info("IngestService initialized successfully.")
 
     def _register_routes(self):
@@ -46,6 +50,6 @@ class IngestionAPI:
             return self.ingest_service.list_all_documents()
 
 
-# This is how you instantiate and expose the app if running via uvicorn or similar
+# Entry point if running via uvicorn or similar
 api_instance = IngestionAPI()
 app = api_instance.app
