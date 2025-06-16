@@ -3,7 +3,7 @@ from typing import List, Dict, Optional
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
 from qdrant_client.models import Distance, VectorParams
-from vector_db_interface import VectorDBInterface
+from db.vector_db_interface import VectorDBInterface
 
 
 class QdrantVectorDB(VectorDBInterface):

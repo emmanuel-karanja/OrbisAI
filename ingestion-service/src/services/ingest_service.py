@@ -4,10 +4,10 @@ import uuid
 from typing import List
 from transformers import pipeline, AutoModelForQuestionAnswering, AutoTokenizer
 from sentence_transformers import SentenceTransformer
-from logger import setup_logger
-from document_processor import DocumentProcessor
-from redis_client import r
-from qdrant_db_client import QdrantVectorDB
+from utils.logger import setup_logger
+from utils.document_processor import DocumentProcessor
+from utils.redis_client import r
+from db.qdrant_db_client import QdrantVectorDB
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 import torch
@@ -62,7 +62,7 @@ class IngestService:
         logger.info("Loading SentenceTransformer model...")
         try:
             logger.info(f"Sentence Model: {SENTENCE_MODEL}")
-            self.model = SentenceTransformer(SENTENCE_MODEL)
+            self.model = SentenceTransformer(SENTENCE_MODEL,trust_remote_code=True)
             logger.info("Model downloaded and loaded successfully.")
         except Exception as e:
             logger.error(f"Error loading model {SENTENCE_MODEL}: {e}")

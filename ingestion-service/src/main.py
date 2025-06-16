@@ -2,9 +2,10 @@
 
 from fastapi import FastAPI, BackgroundTasks
 from fastapi.responses import JSONResponse
-from models import IngestRequest, QueryRequest
-from logger import setup_logger
-from services import IngestService
+
+from models.local_models import IngestRequest, QueryRequest
+from utils.logger import setup_logger
+from services.ingest_service import IngestService
 
 
 class IngestionAPI:

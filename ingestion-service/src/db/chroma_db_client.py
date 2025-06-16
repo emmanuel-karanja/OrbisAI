@@ -1,8 +1,8 @@
 import chromadb
 from chromadb.api.types import Where
 from typing import List, Dict, Optional
-from logger import setup_logger
-from vector_db_interface import VectorDBInterface
+from utils.logger import setup_logger
+from db.vector_db_interface import VectorDBInterface
 
 logger = setup_logger("chroma-db")
 

@@ -6,7 +6,7 @@ import markdown
 from bs4 import BeautifulSoup
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 import redis
-from logger import setup_logger
+from utils.logger import setup_logger
 
 logger = setup_logger(name="document-processor")
 

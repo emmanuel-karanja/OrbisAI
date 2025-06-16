@@ -1,0 +1,6 @@
+{
+    "python.analysis.extraPaths": [
+        "./ingestion-service/src/models",
+        "./ingestion-service/src/utils"
+    ]
+}
