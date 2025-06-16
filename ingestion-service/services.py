@@ -2,7 +2,7 @@ import os
 import base64
 import uuid
 from typing import List
-from transformers import pipeline
+from transformers import pipeline, AutoModelForQuestionAnswering, AutoTokenizer
 from sentence_transformers import SentenceTransformer
 from logger import setup_logger
 from document_processor import DocumentProcessor
@@ -21,43 +21,37 @@ torch.set_num_threads(int(os.getenv("TORCH_NUM_THREADS", 1)))
 # Configuration from environment
 BATCH_SIZE = int(os.getenv("EMBED_BATCH_SIZE", 50))
 SUMMARY_CHUNK_SIZE = int(os.getenv("SUMMARY_CHUNK_SIZE", 500))
-SENTENCE_MODEL = os.getenv("SENTENCE_MODEL", "sentence-transformers/all-mpnet-base-v2")
+SENTENCE_MODEL = os.getenv("SENTENCE_MODEL", "intfloat/e5-base")
 SUMMARIZER_MODEL = os.getenv("SUMMARIZER_MODEL", "sshleifer/distilbart-cnn-12-6")
-QA_MODEL = os.getenv("QA_MODEL", "deepset/roberta-large-squad2")
+QA_MODEL = os.getenv("QA_MODEL", "allenai/longformer-base-4096")
 
 LOG_DIR = os.getenv("LOG_DIR", "logs")
-logger = setup_logger(name="ingestion-service", log_dir=LOG_DIR,log_to_file=True)
-
+logger = setup_logger(name="ingestion-service", log_dir=LOG_DIR, log_to_file=True)
 
 class IngestService:
     def __init__(self):
         logger.info("Initializing services...")
-
         self.load_sentence_model()
         logger.info("Loading summarizer pipeline...")
         self.summarizer = pipeline("summarization", model=SUMMARIZER_MODEL)
         logger.info("Summarizer pipeline loaded.")
         logger.info(f"SUMMARIZER MODEL: {self.summarizer}")
-
-        logger.info("Loading QA pipeline...")
-        self.qa_pipeline = pipeline("question-answering", model=QA_MODEL, tokenizer=QA_MODEL)
-        logger.info(f"QA MODEL: {self.qa_pipeline}")
-        logger.info("QA pipeline loaded.")
-
+        self.load_qa_model()
         logger.info("Connecting to vector database (Qdrant)...")
         self.vector_db = QdrantVectorDB()
         logger.info("Vector DB initialized.")
-
         logger.info("Instantiating DocumentProcessor...")
         self.doc_processor = DocumentProcessor()
 
     def batch_embed_texts(self, texts: List[str]) -> List[List[float]]:
         try:
-            return self.model.encode(texts).tolist()
+            # Apply E5 formatting: prefix queries and passages
+            formatted = [f"query: {t}" if t.endswith("?") else f"passage: {t}" for t in texts]
+            return self.model.encode(formatted).tolist()
         except Exception as e:
             logger.error(f"Embedding failed: {e}")
             return []
-        
+
     def load_sentence_model(self):
         logger.info("Loading SentenceTransformer model...")
         try:
@@ -67,13 +61,23 @@ class IngestService:
         except Exception as e:
             logger.error(f"Error loading model {SENTENCE_MODEL}: {e}")
             raise
+        logger.info(f"Model embedding dim: {self.model.get_sentence_embedding_dimension()}")
 
-        logger.info(f"MODEL: {self.model}.MODEL dimension...{self.model.get_sentence_embedding_dimension()}")
-    
+    def load_qa_model(self):
+        logger.info("Loading QA pipeline...")
+        try:
+            tokenizer = AutoTokenizer.from_pretrained(QA_MODEL)
+            model = AutoModelForQuestionAnswering.from_pretrained(QA_MODEL)
+            device = 0 if torch.cuda.is_available() else -1
+            self.qa_pipeline = pipeline("question-answering", model=model, tokenizer=tokenizer, device=device)
+            self.qa_tokenizer = tokenizer
+            logger.info("QA pipeline loaded successfully.")
+        except Exception as e:
+            logger.error(f"Failed to load QA model '{QA_MODEL}': {e}")
+            raise
+
     def hierarchical_summarize(self, text: str, chunk_size=SUMMARY_CHUNK_SIZE) -> str:
         chunks = [text[i:i + chunk_size] for i in range(0, len(text), chunk_size)]
-        logger.info(f"Summarizing in {len(chunks)} chunks")
-
         summaries = []
         for i, chunk in enumerate(chunks):
             try:
@@ -82,16 +86,12 @@ class IngestService:
                 logger.error(f"Error summarizing chunk {i}: {e}")
                 summary = ""
             summaries.append(summary)
-
         combined_summary = " ".join(summaries)
-        logger.info("Summarizing combined summaries")
-
         try:
             final_summary = self.summarizer(combined_summary, max_length=100, min_length=30, do_sample=False)[0]['summary_text']
         except Exception as e:
             logger.error(f"Error summarizing combined text: {e}")
             final_summary = combined_summary
-
         return final_summary
 
     def delete_docs_by_name(self, doc_name: str):
@@ -101,47 +101,33 @@ class IngestService:
         doc_key = f"ingestion_status:{request.filename}"
         r.set(doc_key, "started")
         logger.info(f"Starting ingestion for file: {request.filename}")
-
         try:
             content_bytes = base64.b64decode(request.content)
-
             if self.doc_processor.document_exists_and_handle_update(request.filename, content_bytes):
                 msg = f"Document {request.filename} already ingested with same content, skipping."
                 logger.info(msg)
                 r.set(doc_key, f"Skipped: {msg}")
                 return
-
             pages = self.doc_processor.extract_text_and_metadata(request.filename, request.content)
             for page in pages:
                 page["doc_name"] = request.filename
-
             chunks, metadatas = self.doc_processor.chunk_text_with_metadata(pages)
-            logger.info(f"Embedding {len(chunks)} chunks in batches of {BATCH_SIZE}...")
-
             for i in range(0, len(chunks), BATCH_SIZE):
                 batch_chunks = chunks[i:i + BATCH_SIZE]
                 batch_metadatas = metadatas[i:i + BATCH_SIZE]
-
                 batch_embeddings = self.batch_embed_texts(batch_chunks)
                 if not batch_embeddings:
                     logger.warning(f"No embeddings returned for batch starting at chunk {i}, skipping.")
                     continue
-
-                # 🔄 Generate UUIDs instead of filename-based IDs
                 batch_ids = [str(uuid.uuid4()) for _ in range(len(batch_chunks))]
-
                 self.vector_db.add_documents(
                     documents=batch_chunks,
                     embeddings=batch_embeddings,
                     ids=batch_ids,
                     metadatas=batch_metadatas
                 )
-
             full_text = "\n\n".join([p["text"] for p in pages])
-            logger.info("Generating hierarchical summary...")
             summary = self.hierarchical_summarize(full_text)
-
-            logger.info("Embedding summary...")
             summary_embedding = self.batch_embed_texts([summary])
             if summary_embedding:
                 self.vector_db.add_documents(
@@ -152,12 +138,8 @@ class IngestService:
                 )
             else:
                 logger.warning("No embedding returned for summary, skipping summary storage.")
-
             self.doc_processor.save_document_checksum(request.filename, content_bytes)
-
-            logger.info(f"Ingestion completed successfully for {request.filename}")
             r.set(doc_key, "completed")
-
         except Exception as e:
             error_msg = f"Ingestion failed for {request.filename}: {e}"
             logger.error(error_msg)
@@ -172,26 +154,27 @@ class IngestService:
 
     def query_docs(self, request):
         logger.info(f"Received query: {request.question}")
-
-        # Generate question embedding
         question_embedding = self.batch_embed_texts([request.question])[0]
-        results = self.vector_db.query(question_embedding, top_k=10)  # Fetch more results for better filtering
 
-        logger.info(f"Raw query results: {results}")
+        results = self.vector_db.query(question_embedding, top_k=10)
 
-        # Filter out irrelevant results based on cosine similarity
-        filtered_docs = [
-            {"document": doc, "metadata": metadata, "score": score}
-            for doc, metadata, score in zip(
-                results.get("documents", [])[0], 
-                results.get("metadatas", [])[0], 
-                results.get("distances", [])[0]
-            )
-            if score < 0.3  # Adjust threshold based on requirements
+        docs = results.get("documents", [[]])[0]
+        metas = results.get("metadatas", [[]])[0]
+        distances = results.get("distances", [[]])[0]
+        summaries = results.get("summaries", [])
+
+        all_docs = [
+            {
+                "document": doc,
+                "metadata": metadata,
+                "score": 1 - distance
+            }
+            for doc, metadata, distance in zip(docs, metas, distances)
+            if (1 - distance) >= 0.5
         ]
 
-        if not filtered_docs:
-            logger.warning("No sufficiently relevant results found.")
+        if not all_docs:
+            logger.warning("No strong matches (similarity >= 0.5) returned from vector DB.")
             return {
                 "question": request.question,
                 "answer": "No relevant information found.",
@@ -201,51 +184,36 @@ class IngestService:
                 "sources": [],
                 "ranked_matches": []
             }
-
-        # Get summaries from the database
-        summary_docs = self.vector_db.get_documents(where={"summary": True})
-        summary_text = summary_docs.get("documents", [""])[0] if summary_docs.get("documents") else ""
-
-        # Prepare context for QA
+        
+        summary_text = "\n\n".join(summaries)
         context_parts = []
+
         if summary_text:
             context_parts.append("Summary:\n" + summary_text)
-        for doc in filtered_docs:
+        for doc in all_docs:
             context_parts.append(doc["document"])
         context = "\n\n".join(context_parts)
 
-        logger.info("Running QA pipeline...")
-        logger.info(f"QA context length: {len(context.split())} words")
-        
         try:
-            # Run the QA pipeline on the prepared context
             answer = self.qa_pipeline(question=request.question, context=context)
-            logger.info(f"RAW QA answer: {answer}")
-
-            # Handle cases where no answer is confidently found
-            if not answer.get("answer", "").strip():
-                logger.warning("QA model returned an empty answer.")
-                answer_text = "I'm not sure based on the available information."
-            else:
-                answer_text = answer["answer"]
-
+            answer_text = answer.get("answer", "").strip() or "I'm not sure based on the available information."
             return {
                 "question": request.question,
                 "answer": answer_text,
                 "score": answer.get("score", 0),
-                "context": [doc["document"] for doc in filtered_docs],
+                "context": [doc["document"] for doc in all_docs],
                 "summary": summary_text,
-                "sources": [doc["metadata"] for doc in filtered_docs],
+                "sources": [doc["metadata"] for doc in all_docs],
                 "ranked_matches": [
                     {
                         "text": doc["document"],
                         "metadata": doc["metadata"],
                         "similarity": doc["score"]
                     }
-                    for doc in filtered_docs
+                    for doc in all_docs
                 ]
             }
-
+        
         except Exception as e:
             logger.error(f"QA pipeline error: {e}")
             return {

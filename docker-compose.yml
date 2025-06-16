@@ -39,7 +39,7 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - N8N_LOG_WEBHOOK=http://n8n:5678/webhook/log
-      - SENTENCE_MODEL=sentence-transformers/all-mpnet-base-v2
+      - SENTENCE_MODEL=intfloat/e5-base
     env_file:
       - ./ingestion-service/.env         # 👈 This loads your Hugging Face model vars
     command: uvicorn main:app --host 0.0.0.0 --port 8001 --log-level info --reload
