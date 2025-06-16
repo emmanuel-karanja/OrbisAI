@@ -87,14 +87,28 @@ class IngestService:
         summaries = []
         for i, chunk in enumerate(chunks):
             try:
-                summary = self.summarizer(chunk, max_length=500, min_length=30, do_sample=False)[0]['summary_text']
+                chunk_length = len(chunk.split())
+                max_len = min(500, int(chunk_length * 0.5))  # Make summary about half the length
+                max_len = max(max_len, 30)  # Avoid too-short max length
+                summary = self.summarizer(chunk, max_length=max_len, min_length=20, do_sample=False)[0]['summary_text']
+
             except Exception as e:
                 logger.error(f"Error summarizing chunk {i}: {e}")
                 summary = ""
             summaries.append(summary)
         combined_summary = " ".join(summaries)
         try:
-            final_summary = self.summarizer(combined_summary, max_length=100, min_length=30, do_sample=False)[0]['summary_text']
+            combined_length = len(combined_summary.split())
+            final_max_len = min(100, int(combined_length * 0.5))
+            final_max_len = max(final_max_len, 30)
+
+            final_summary = self.summarizer(
+                combined_summary,
+                max_length=final_max_len,
+                min_length=20,
+                do_sample=False
+            )[0]['summary_text']
+
         except Exception as e:
             logger.error(f"Error summarizing combined text: {e}")
             final_summary = combined_summary
