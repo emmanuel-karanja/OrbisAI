@@ -21,7 +21,7 @@ torch.set_num_threads(int(os.getenv("TORCH_NUM_THREADS", 1)))
 # Configuration from environment
 BATCH_SIZE = int(os.getenv("EMBED_BATCH_SIZE", 50))
 SUMMARY_CHUNK_SIZE = int(os.getenv("SUMMARY_CHUNK_SIZE", 500))
-SENTENCE_MODEL = os.getenv("SENTENCE_MODEL", "iZyphraLaw/legalbert-embedding")
+SENTENCE_MODEL = os.getenv("SENTENCE_MODEL", "nomic-ai/nomic-embed-text-v1")
 SUMMARIZER_MODEL = os.getenv("SUMMARIZER_MODEL", "sshleifer/distilbart-cnn-12-6")
 QA_MODEL = os.getenv("QA_MODEL", "allenai/longformer-base-4096")
 
