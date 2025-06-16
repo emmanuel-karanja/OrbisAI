@@ -11,6 +11,9 @@ from qdrant_db_client import QdrantVectorDB
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 import torch
+from sentence_transformers import CrossEncoder
+import numpy as np
+
 
 # Load environment variables
 load_dotenv(override=True)
@@ -42,6 +45,9 @@ class IngestService:
         logger.info("Vector DB initialized.")
         logger.info("Instantiating DocumentProcessor...")
         self.doc_processor = DocumentProcessor()
+        logger.info("Loading CrossEncoder model for reranking...")
+        self.cross_encoder = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
+        logger.info("CrossEncoder model loaded.")
 
     def batch_embed_texts(self, texts: List[str]) -> List[List[float]]:
         try:
@@ -152,51 +158,75 @@ class IngestService:
             return {"status": "ok", "message": status_msg}
         return JSONResponse(status_code=404, content={"status": "not_found", "message": "No status available"})
 
+    # Replace your `query_docs` method with this improved version:
+
     def query_docs(self, request):
         logger.info(f"Received query: {request.question}")
-        question_embedding = self.batch_embed_texts([request.question])[0]
-
-        results = self.vector_db.query(question_embedding, top_k=10)
-
-        docs = results.get("documents", [[]])[0]
-        metas = results.get("metadatas", [[]])[0]
-        distances = results.get("distances", [[]])[0]
-        summaries = results.get("summaries", [])
-
-        all_docs = [
-            {
-                "document": doc,
-                "metadata": metadata,
-                "score": 1 - distance
-            }
-            for doc, metadata, distance in zip(docs, metas, distances)
-            if (1 - distance) >= 0.5
-        ]
-
-        if not all_docs:
-            logger.warning("No strong matches (similarity >= 0.5) returned from vector DB.")
-            return {
-                "question": request.question,
-                "answer": "No relevant information found.",
-                "score": 0,
-                "context": [],
-                "summary": "",
-                "sources": [],
-                "ranked_matches": []
-            }
-        
-        summary_text = "\n\n".join(summaries)
-        context_parts = []
-
-        if summary_text:
-            context_parts.append("Summary:\n" + summary_text)
-        for doc in all_docs:
-            context_parts.append(doc["document"])
-        context = "\n\n".join(context_parts)
+        threshold = float(os.getenv("SIMILARITY_THRESHOLD", 0.5))
+        max_tokens = int(os.getenv("MAX_QA_TOKENS", 3000))
 
         try:
+            question_embedding = self.batch_embed_texts([request.question])[0]
+            results = self.vector_db.query(question_embedding, top_k=10)
+
+            docs = results.get("documents", [[]])[0]
+            metas = results.get("metadatas", [[]])[0]
+            distances = results.get("distances", [[]])[0]
+            summaries = results.get("summaries", [])
+
+            # Convert distance to similarity and filter
+            all_docs = [
+                {
+                    "document": doc,
+                    "metadata": metadata,
+                    "score": 1 - distance
+                }
+                for doc, metadata, distance in zip(docs, metas, distances)
+                if (1 - distance) >= threshold
+            ]
+
+            if not all_docs:
+                logger.warning(f"No matches >= similarity threshold {threshold}")
+                return {
+                    "question": request.question,
+                    "answer": "No relevant information found.",
+                    "score": 0,
+                    "context": [],
+                    "summary": "",
+                    "sources": [],
+                    "ranked_matches": []
+                }
+
+            # Sort docs by score descending
+            all_docs = sorted(all_docs, key=lambda d: d["score"], reverse=True)
+            # Rerank with cross-encoder
+            all_docs = self.rerank_with_cross_encoder(request.question, all_docs)
+
+
+            # Build QA context
+            summary_text = "\n\n".join(summaries)
+            context_parts = []
+            token_count = 0
+
+            if summary_text:
+                context_parts.append("Summary:\n" + summary_text)
+                token_count += len(summary_text.split())
+
+            for doc in all_docs:
+                doc_tokens = len(doc["document"].split())
+                if token_count + doc_tokens > max_tokens:
+                    break
+                context_parts.append(doc["document"])
+                token_count += doc_tokens
+
+            context = "\n\n".join(context_parts)
+            logger.info(f"QA context contains ~{token_count} tokens")
+
             answer = self.qa_pipeline(question=request.question, context=context)
             answer_text = answer.get("answer", "").strip() or "I'm not sure based on the available information."
+            rag_metrics = self.compute_rag_metrics(answer_text, [doc["document"] for doc in all_docs])
+
+
             return {
                 "question": request.question,
                 "answer": answer_text,
@@ -211,9 +241,10 @@ class IngestService:
                         "similarity": doc["score"]
                     }
                     for doc in all_docs
-                ]
+                ],
+                "rag_metrics":rag_metrics
             }
-        
+
         except Exception as e:
             logger.error(f"QA pipeline error: {e}")
             return {
@@ -221,7 +252,7 @@ class IngestService:
                 "answer": "An error occurred while processing your query.",
                 "score": 0,
                 "context": [],
-                "summary": summary_text,
+                "summary": "",
                 "sources": [],
                 "ranked_matches": []
             }
@@ -235,3 +266,18 @@ class IngestService:
         except Exception as e:
             logger.error(f"Failed to list documents: {e}")
             return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
+    def rerank_with_cross_encoder(self, query: str, docs: List[dict]) -> List[dict]:
+        pairs = [[query, doc["document"]] for doc in docs]
+        scores = self.cross_encoder.predict(pairs)
+
+        for doc, score in zip(docs, scores):
+            doc["rerank_score"] = score
+
+        return sorted(docs, key=lambda x: x["rerank_score"], reverse=True)
+    def compute_rag_metrics(self, answer: str, docs: List[str]) -> dict:
+        answer_lower = answer.lower()
+        context_hits = sum(1 for doc in docs if answer_lower in doc.lower())
+        return {
+            "answer_in_context": context_hits > 0,
+            "context_precision": context_hits / len(docs) if docs else 0.0
+        }
