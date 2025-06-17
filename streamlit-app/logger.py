@@ -24,7 +24,7 @@ class WebhookLogHandler(logging.Handler):
         except Exception:
             pass  # Avoid log loop if webhook fails
 
-def setup_logger(name="app", level=logging.INFO, log_to_file=False, log_dir="logs") -> logging.Logger:
+def setup_logger(name="app", level=logging.INFO, log_to_file=True, log_dir="logs") -> logging.Logger:
     logger = logging.getLogger(name)
     logger.setLevel(level)
 

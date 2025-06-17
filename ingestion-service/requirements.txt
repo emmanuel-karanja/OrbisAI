@@ -16,3 +16,4 @@ sentence-transformers
 qdrant-client
 python-dotenv
 einops
+openai
