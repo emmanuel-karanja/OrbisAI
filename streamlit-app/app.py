@@ -31,10 +31,16 @@ def save_query_to_db(query):
 def load_query_history_from_db(limit=10):
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
-    cur.execute("SELECT query, timestamp FROM history ORDER BY timestamp DESC LIMIT ?", (limit,))
+    cur.execute("SELECT id, query, timestamp FROM history ORDER BY timestamp DESC LIMIT ?", (limit,))
     rows = cur.fetchall()
     conn.close()
     return rows
+
+def delete_query_from_db(query_id):
+    conn = sqlite3.connect(DB_PATH)
+    conn.execute("DELETE FROM history WHERE id = ?", (query_id,))
+    conn.commit()
+    conn.close()
 
 # ───────────────────────────────
 # 🚀 Streamlit App Start
@@ -138,9 +144,14 @@ except Exception as e:
 st.divider()
 st.header("🔍 Query Your Documents")
 
-query_history = load_query_history_from_db()
+# For pre-filling input if history is clicked
+if "selected_query" not in st.session_state:
+    st.session_state.selected_query = ""
 
-query_text = st.text_input("Type your question about any uploaded document:")
+query_text = st.text_input(
+    "Type your question about any uploaded document:",
+    value=st.session_state.selected_query
+)
 
 if st.button("Search") and query_text:
     logger.info(f"Query submitted: {query_text}")
@@ -188,9 +199,22 @@ if st.button("Search") and query_text:
             st.error(f"❌ Request failed: {e}")
 
 # ───────────────────────────────
-# 🕘 Query History Section
+# 🕘 Query History Section (Clickable + Deletable)
 # ───────────────────────────────
+query_history = load_query_history_from_db()
+
 if query_history:
     with st.expander("🕘 Query History (Last 10)"):
-        for q, ts in query_history:
-            st.markdown(f"- **{q}** <br/><span style='font-size: 0.8em; color: gray'>🕓 {ts}</span>", unsafe_allow_html=True)
+        for query_id, q, ts in query_history:
+            col1, col2, col3 = st.columns([0.7, 0.2, 0.1])
+            with col1:
+                if st.button(f"{q}", key=f"requery_{query_id}"):
+                    st.session_state.selected_query = q
+                    st.experimental_rerun()
+            with col2:
+                st.markdown(f"<span style='font-size: 0.8em; color: gray'>🕓 {ts}</span>", unsafe_allow_html=True)
+            with col3:
+                if st.button("❌", key=f"delete_{query_id}"):
+                    delete_query_from_db(query_id)
+                    st.success(f"Deleted: '{q}'")
+                    st.experimental_rerun()
