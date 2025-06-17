@@ -1,0 +1,39 @@
+Folder PATH listing
+Volume serial number is 8680-4DEA
+C:.
+¦   .dockerignore
+¦   .env
+¦   Dockerfile
+¦   requirements.txt
+¦   run.ps1
+¦   setup.ps1
+¦   structure.txt
+¦   
++---src
+¦   ¦   bulk_ingest_local.py
+¦   ¦   main.py
+¦   ¦   
+¦   +---ai_engine
+¦   ¦       ai_engine_interface.py
+¦   ¦       local_ai_engine.py
+¦   ¦       openai_ai_engine.py
+¦   ¦       
+¦   +---db
+¦   ¦       chroma_db_client.py
+¦   ¦       qdrant_db_client.py
+¦   ¦       vector_db_interface.py
+¦   ¦       
+¦   +---models
+¦   ¦       local_models.py
+¦   ¦       
+¦   +---services
+¦   ¦       ingest_service.py
+¦   ¦       
+¦   +---utils
+¦           document_processor.py
+¦           logger.py
+¦           redis_client.py
+¦           
++---__pycache__
+        main.cpython-311.pyc
+        

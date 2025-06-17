@@ -7,8 +7,6 @@ python -m venv venv
 
 # Step 3: Install dependencies (edit/add as needed)
 
-PYTHONPATH=./src
-
 
 # Step 4: Save installed packages to requirements.txt
 pip freeze > requirements.txt

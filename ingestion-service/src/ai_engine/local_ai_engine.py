@@ -6,7 +6,7 @@ import numpy as np
 from typing import List, Dict
 from transformers import pipeline, AutoTokenizer, AutoModelForQuestionAnswering
 from sentence_transformers import SentenceTransformer, CrossEncoder
-from ai_engine_interface import AIEngine
+from .ai_engine_interface import AIEngine
 from utils.logger import setup_logger
 
 logger = setup_logger("local-ai-engine")
