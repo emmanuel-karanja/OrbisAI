@@ -217,4 +217,4 @@ if query_history:
                 if st.button("❌", key=f"delete_{query_id}"):
                     delete_query_from_db(query_id)
                     st.success(f"Deleted: '{q}'")
-                    st.experimental_rerun()
+                    st.rerun()
