@@ -6,7 +6,7 @@ import numpy as np
 from typing import List, Dict
 from transformers import pipeline, AutoTokenizer, AutoModelForQuestionAnswering
 from sentence_transformers import SentenceTransformer, CrossEncoder
-from .ai_engine_interface import AIEngine
+from ai_engine.ai_engine_interface import AIEngine
 from utils.logger import setup_logger
 
 logger = setup_logger("local-ai-engine")
@@ -18,6 +18,7 @@ class LocalAIEngine(AIEngine):
         sentence_model_name = os.getenv("SENTENCE_MODEL", "nomic-ai/nomic-embed-text-v1")
         summarizer_model_name = os.getenv("SUMMARIZER_MODEL", "sshleifer/distilbart-cnn-12-6")
         qa_model_name = os.getenv("QA_MODEL", "allenai/longformer-base-4096")
+        cross_encoder_mode_name=os.getenv("CROSSENCODER_MODEL","cross-encoder/ms-marco-MiniLM-L-6-v2")
 
         logger.info(f"Loading sentence embedding model: {sentence_model_name}")
         self.embed_model = SentenceTransformer(sentence_model_name, trust_remote_code=True)
@@ -32,7 +33,7 @@ class LocalAIEngine(AIEngine):
         self.qa_pipeline = pipeline("question-answering", model=model, tokenizer=tokenizer, device=device)
 
         logger.info("Loading CrossEncoder reranker model...")
-        self.cross_encoder = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
+        self.cross_encoder = CrossEncoder(cross_encoder_mode_name)
 
         logger.info("LocalAIEngine initialized successfully.")
 
@@ -49,12 +50,13 @@ class LocalAIEngine(AIEngine):
 
     def summarize(self, text: str) -> str:
         logger.info("Starting hierarchical summarization...")
-        chunks = [text[i:i + 500] for i in range(0, len(text), 500)]
+        summary_chunk_size=os.getenv("SUMMARY_CHUNK_SIZE",500)
+        chunks = [text[i:i + summary_chunk_size] for i in range(0, len(text), summary_chunk_size)]
         summaries = []
 
         for i, chunk in enumerate(chunks):
             chunk_len = len(chunk.split())
-            max_len = min(500, int(chunk_len * 0.5))
+            max_len = min(summary_chunk_size, int(chunk_len * 0.5))
             max_len = max(max_len, 30)
             try:
                 summary = self.summarizer(chunk, max_length=max_len, min_length=20, do_sample=False)[0]['summary_text']

@@ -10,7 +10,7 @@ load_dotenv()
 DEFAULT_API_URL = os.getenv("INGEST_API_URL", "http://localhost:8001/ingest")
 DEFAULT_DOCS_SOURCE_DIR=os.getenv("DOCS_SOURCE_DIR","C:/Users/ZBOOK/Downloads/kenya_laws/pdfs")
 
-def ingest_law_documents(source_dir=DEFAULT_DOCS_SOURCE_DIR, api_url=DEFAULT_API_URL):
+def ingest_documents(source_dir=DEFAULT_DOCS_SOURCE_DIR, api_url=DEFAULT_API_URL):
     """
     Ingests all files from all subdirectories under the given source directory.
 
@@ -45,5 +45,5 @@ if __name__ == "__main__":
     parser.add_argument("--api", default=DEFAULT_API_URL, help="Ingestion API endpoint.")
     args = parser.parse_args()
 
-    ingest_law_documents(args.source_dir, args.api)
+    ingest_documents(args.source_dir, args.api)
 

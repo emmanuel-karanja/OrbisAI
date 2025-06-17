@@ -4,6 +4,7 @@ import uuid
 from typing import List
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
+import torch
 from utils.logger import setup_logger
 from utils.document_processor import DocumentProcessor
 from utils.redis_client import r
@@ -14,7 +15,7 @@ from ai_engine.ai_engine_interface import AIEngine  # Interface for AI abstracti
 load_dotenv(override=True)
 
 # Torch performance config
-import torch
+
 torch.set_num_threads(int(os.getenv("TORCH_NUM_THREADS", 1)))
 
 # Configuration
