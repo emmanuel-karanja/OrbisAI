@@ -39,7 +39,7 @@ def setup_logger(name="app", level=None, log_to_file=True, log_dir="logs") -> lo
 
     # Resolve values from .env if not provided
     level = level or os.getenv("LOG_LEVEL", "INFO").upper()
-    log_to_file = log_to_file if log_to_file is not None else os.getenv("LOG_TO_FILE", "true").lower() == "true"
+    log_to_file = log_to_file if log_to_file is not None else os.getenv("LOG_TO_FILE", "True").lower() == "true"
     log_dir = log_dir or os.getenv("LOG_DIR", "logs")
 
     # Convert level to logging constant
@@ -58,6 +58,7 @@ def setup_logger(name="app", level=None, log_to_file=True, log_dir="logs") -> lo
 
     # File handler (if enabled)
     if log_to_file:
+        print(f"WE ARE HERE BITCHES::::::::::::")
         Path(log_dir).mkdir(parents=True, exist_ok=True)
         file_handler = logging.FileHandler(f"{log_dir}/{name}.log")
         file_handler.setFormatter(formatter)
