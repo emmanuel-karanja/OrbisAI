@@ -11,8 +11,13 @@ import os
 LOG_DIR = os.getenv("LOG_DIR", "logs")
 logger = setup_logger("qdrant-db", log_dir=LOG_DIR, log_to_file=True)
 
+QDRANT_HOST=os.getenv("QDRANT_HOST","qdrant")
+QDRANT_PORT=os.getenv("QDRANT_PORT",6333)
+QDRANT_VECTOR_SIZE=os.getenv("QDRANT_VECTOR_SIZE",768)
+QDRANT_COLLECTION=os.getenv("QDRANT_COLLECTION","documents")
+
 class QdrantVectorDB(VectorDBInterface):
-    def __init__(self, collection_name: str = "documents", vector_size: int = 768, host: str = "qdrant", port: int = 6333):
+    def __init__(self, collection_name: str = QDRANT_COLLECTION, vector_size: int = QDRANT_VECTOR_SIZE, host: str = QDRANT_HOST, port: int = QDRANT_PORT):
         try:
             self.collection_name = collection_name
             self.client = QdrantClient(host=host, port=port)

@@ -8,9 +8,12 @@ import os
 LOG_DIR = os.getenv("LOG_DIR", "logs")
 logger = setup_logger("chroma-db", log_dir=LOG_DIR, log_to_file=True)
 
+CHROMADB_HOST=os.getenv("CHROMADB_HOST","chromadb")
+CHROMADB_PORT=os.getenv("CHROMADB_PORT",8000)
+CHROMADB_COLLECTION=os.getenv("CHROMADB_COLLECTION","docs")
 
 class ChromaDBClient(VectorDBInterface):
-    def __init__(self, host="chromadb", port=8000, collection_name="docs"):
+    def __init__(self, host=CHROMADB_HOST, port=CHROMADB_PORT, collection_name=CHROMADB_COLLECTION):
         try:
             logger.info("Connecting to ChromaDB...")
             self.client = chromadb.HttpClient(host=host, port=port)
