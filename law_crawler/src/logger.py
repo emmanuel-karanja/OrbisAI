@@ -5,8 +5,8 @@ import requests
 import sys
 from pathlib import Path
 import os
-
 from dotenv import load_dotenv
+
 load_dotenv()
 
 class WebhookLogHandler(logging.Handler):
