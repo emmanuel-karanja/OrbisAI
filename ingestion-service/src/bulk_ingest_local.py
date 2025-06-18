@@ -1,49 +1,80 @@
 import os
 import base64
-import requests
+import asyncio
+import aiohttp
+import aiofiles
 import argparse
+from aiohttp import ClientSession
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
 load_dotenv()
 
-DEFAULT_API_URL = os.getenv("INGEST_API_URL", "http://localhost:8001/ingest")
-DEFAULT_DOCS_SOURCE_DIR=os.getenv("DOCS_SOURCE_DIR","C:/Users/ZBOOK/Downloads/kenya_laws/pdfs")
 
-def ingest_documents(source_dir=DEFAULT_DOCS_SOURCE_DIR, api_url=DEFAULT_API_URL):
-    """
-    Ingests all files from all subdirectories under the given source directory.
+class AsyncDocumentIngestor:
+    def __init__(self, source_dir: str = None, api_url: str = None, concurrency: int = 10):
+        self.source_dir = source_dir or os.getenv("DOCS_SOURCE_DIR", "./documents")
+        self.api_url = api_url or os.getenv("INGEST_API_URL", "http://localhost:8001/ingest")
+        self.concurrency = concurrency
+        self.semaphore = asyncio.Semaphore(concurrency)
 
-    Args:
-        source_dir (str): Root directory to scan.
-        api_url (str): Ingestion endpoint.
-    """
-    if not os.path.isdir(source_dir):
-        print(f"❌ Source directory does not exist: {source_dir}")
-        return
+    async def _encode_file_to_base64(self, path: str) -> str:
+        try:
+            async with aiofiles.open(path, "rb") as f:
+                content = await f.read()
+                return base64.b64encode(content).decode("utf-8")
+        except Exception as e:
+            print(f"❌ Error reading file {path}: {e}")
+            return None
 
-    for root, _, files in os.walk(source_dir):
-        for fname in files:
-            fpath = os.path.join(root, fname)
-            try:
-                with open(fpath, "rb") as f:
-                    encoded = base64.b64encode(f.read()).decode("utf-8")
+    async def _post_document(self, session: ClientSession, filename: str, content: str, path: str):
+        if not content:
+            return
+        try:
+            payload = {
+                "filename": filename,
+                "content": content
+            }
+            async with session.post(self.api_url, json=payload, timeout=60) as response:
+                text = await response.text()
+                status = "✅" if response.status == 200 else "⚠️"
+                print(f"{status} {filename} → {response.status}: {text}")
+        except Exception as e:
+            print(f"❌ Failed to upload {filename}: {e}")
 
-                data = {
-                    "filename": fname,
-                    "content": encoded
-                }
+    async def _process_file(self, session: ClientSession, path: str, fname: str):
+        async with self.semaphore:
+            content = await self._encode_file_to_base64(path)
+            await self._post_document(session, fname, content, path)
 
-                response = requests.post(api_url, json=data, timeout=60)
-                print(f"[{fpath}] → Status {response.status_code}: {response.text}")
-            except Exception as e:
-                print(f"❌ Error ingesting {fpath}: {e}")
+    async def ingest(self):
+        if not os.path.isdir(self.source_dir):
+            print(f"❌ Source directory does not exist: {self.source_dir}")
+            return
+
+        print(f"📁 Scanning: {self.source_dir}")
+        print(f"📡 API Endpoint: {self.api_url}")
+
+        tasks = []
+        async with aiohttp.ClientSession() as session:
+            for root, _, files in os.walk(self.source_dir):
+                for fname in files:
+                    path = os.path.join(root, fname)
+                    tasks.append(self._process_file(session, path, fname))
+            await asyncio.gather(*tasks)
+
+        print("🚀 Ingestion completed.")
+
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Ingest documents from a given directory recursively.")
-    parser.add_argument("--source-dir", default=DEFAULT_DOCS_SOURCE_DIR, help="Path to the root directory containing documents to ingest.")
-    parser.add_argument("--api", default=DEFAULT_API_URL, help="Ingestion API endpoint.")
+    parser = argparse.ArgumentParser(description="Async Document Ingestor")
+    parser.add_argument("--source-dir", help="Path to document directory")
+    parser.add_argument("--api", help="Ingestion API endpoint")
+    parser.add_argument("--concurrency", type=int, default=10, help="Max concurrent uploads")
     args = parser.parse_args()
 
-    ingest_documents(args.source_dir, args.api)
-
+    ingestor = AsyncDocumentIngestor(
+        source_dir=args.source_dir,
+        api_url=args.api,
+        concurrency=args.concurrency
+    )
+    asyncio.run(ingestor.ingest())

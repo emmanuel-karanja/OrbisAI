@@ -1,5 +1,3 @@
-# logger.py
-
 import logging
 import requests
 import sys
@@ -27,7 +25,8 @@ class WebhookLogHandler(logging.Handler):
             }
             requests.post(self.webhook_url, json=payload, timeout=2)
         except Exception:
-            pass  # Prevent logging loop on failure
+            # Fail silently to prevent recursive logging errors
+            pass
 
 
 def setup_logger(name="app", level=None, log_to_file=True, log_dir="logs") -> logging.Logger:
@@ -37,12 +36,12 @@ def setup_logger(name="app", level=None, log_to_file=True, log_dir="logs") -> lo
     if logger.hasHandlers():
         return logger
 
-    # Resolve values from .env if not provided
+    # Resolve values
     level = level or os.getenv("LOG_LEVEL", "INFO").upper()
     log_to_file = log_to_file if log_to_file is not None else os.getenv("LOG_TO_FILE", "True").lower() == "true"
     log_dir = log_dir or os.getenv("LOG_DIR", "logs")
 
-    # Convert level to logging constant
+    # Convert level string to logging level
     numeric_level = getattr(logging, level, logging.INFO)
     logger.setLevel(numeric_level)
 
@@ -51,20 +50,19 @@ def setup_logger(name="app", level=None, log_to_file=True, log_dir="logs") -> lo
         datefmt="%Y-%m-%d %H:%M:%S"
     )
 
-    # Console handler
+    # Console logging
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
 
-    # File handler (if enabled)
+    # File logging
     if log_to_file:
-        print(f"WE ARE HERE BITCHES::::::::::::")
         Path(log_dir).mkdir(parents=True, exist_ok=True)
-        file_handler = logging.FileHandler(f"{log_dir}/{name}.log")
+        file_handler = logging.FileHandler(Path(log_dir) / f"{name}.log")
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
 
-    # Webhook logging (optional)
+    # Webhook logging
     webhook_url = os.getenv("N8N_LOG_WEBHOOK")
     if webhook_url:
         webhook_handler = WebhookLogHandler(webhook_url, service_name=name)

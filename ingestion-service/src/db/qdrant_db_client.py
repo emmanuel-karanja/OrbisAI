@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict, Optional
-from qdrant_client import QdrantClient
+from qdrant_client import AsyncQdrantClient
 from qdrant_client.http import models
 from qdrant_client.models import Distance, VectorParams
 from db.vector_db_interface import VectorDBInterface
@@ -11,46 +11,49 @@ import os
 LOG_DIR = os.getenv("LOG_DIR", "logs")
 logger = setup_logger("qdrant-db", log_dir=LOG_DIR, log_to_file=True)
 
-QDRANT_HOST=os.getenv("QDRANT_HOST","qdrant")
-QDRANT_PORT=os.getenv("QDRANT_PORT",6333)
-QDRANT_VECTOR_SIZE=os.getenv("QDRANT_VECTOR_SIZE",768)
-QDRANT_COLLECTION=os.getenv("QDRANT_COLLECTION","documents")
+QDRANT_HOST = os.getenv("QDRANT_HOST", "qdrant")
+QDRANT_PORT = int(os.getenv("QDRANT_PORT", 6333))
+QDRANT_VECTOR_SIZE = int(os.getenv("QDRANT_VECTOR_SIZE", 768))
+QDRANT_COLLECTION = os.getenv("QDRANT_COLLECTION", "documents")
+
 
 class QdrantVectorDB(VectorDBInterface):
     def __init__(self, collection_name: str = QDRANT_COLLECTION, vector_size: int = QDRANT_VECTOR_SIZE, host: str = QDRANT_HOST, port: int = QDRANT_PORT):
-        try:
-            self.collection_name = collection_name
-            self.client = QdrantClient(host=host, port=port)
-            logger.info(f"Connecting to Qdrant at {host}:{port} and checking collection '{collection_name}'.")
+        self.collection_name = collection_name
+        self.client = AsyncQdrantClient(host=host, port=port)
+        self.vector_size = vector_size
 
-            collections = self.client.get_collections().collections
-            if self.collection_name not in [col.name for col in collections]:
-                self.client.recreate_collection(
+    async def init_collection(self):
+        try:
+            logger.info(f"Connecting to Qdrant at {self.client.host}:{self.client.port} and checking collection '{self.collection_name}'.")
+            collections = await self.client.get_collections()
+            if self.collection_name not in [col.name for col in collections.collections]:
+                await self.client.recreate_collection(
                     collection_name=self.collection_name,
-                    vectors_config=VectorParams(size=vector_size, distance=Distance.COSINE),
+                    vectors_config=VectorParams(size=self.vector_size, distance=Distance.COSINE),
                 )
                 logger.info(f"Created new collection '{self.collection_name}'.")
         except Exception as e:
             logger.error(f"Error initializing QdrantVectorDB: {e}")
             raise
 
-    def add_documents(self, documents: List[str], embeddings: List[List[float]], ids: List[str], metadatas: List[Dict]):
+    async def add_documents(self, documents: List[str], embeddings: List[List[float]], ids: List[str], metadatas: List[Dict]):
         try:
             points = []
             for idx, (doc, vector, metadata) in enumerate(zip(documents, embeddings, metadatas)):
-                metadata = metadata.copy()
-                metadata["document"] = doc
-                points.append(models.PointStruct(id=ids[idx], vector=vector, payload=metadata))
-            self.client.upsert(collection_name=self.collection_name, points=points)
+                payload = metadata.copy()
+                payload["document"] = doc
+                points.append(models.PointStruct(id=ids[idx], vector=vector, payload=payload))
+            await self.client.upsert(collection_name=self.collection_name, points=points)
             logger.info(f"Added {len(points)} documents to collection '{self.collection_name}'.")
         except Exception as e:
             logger.error(f"Error adding documents: {e}")
             raise
 
-    def delete_documents(self, where: Dict):
+    async def delete_documents(self, where: Dict):
         try:
             conditions = [models.FieldCondition(key=key, match=models.MatchValue(value=value)) for key, value in where.items()]
-            self.client.delete(
+            await self.client.delete(
                 collection_name=self.collection_name,
                 filter=models.Filter(must=conditions)
             )
@@ -59,9 +62,9 @@ class QdrantVectorDB(VectorDBInterface):
             logger.error(f"Error deleting documents with filter {where}: {e}")
             raise
 
-    def query(self, embedding: List[float], top_k: int) -> Dict:
+    async def query(self, embedding: List[float], top_k: int) -> Dict:
         try:
-            search_result = self.client.search(
+            search_result = await self.client.search(
                 collection_name=self.collection_name,
                 query_vector=embedding,
                 limit=top_k,
@@ -87,14 +90,14 @@ class QdrantVectorDB(VectorDBInterface):
             summary_texts = []
             if doc_names:
                 try:
-                    summary_hits, _ = self.client.scroll(
+                    summary_hits, _ = await self.client.scroll(
                         collection_name=self.collection_name,
-                        scroll_filter={
-                            "must": [
-                                {"key": "summary", "match": {"value": True}},
-                                {"key": "doc_name", "match": {"any": list(doc_names)}}
+                        scroll_filter=models.Filter(
+                            must=[
+                                models.FieldCondition(key="summary", match=models.MatchValue(value=True)),
+                                models.FieldCondition(key="doc_name", match=models.MatchAny(any=list(doc_names))),
                             ]
-                        },
+                        ),
                         with_payload=True
                     )
 
@@ -117,7 +120,7 @@ class QdrantVectorDB(VectorDBInterface):
             logger.error(f"Error during query: {e}")
             raise
 
-    def get_documents(self, where: Dict = None, include: List[str] = ["documents", "metadatas"]) -> Dict:
+    async def get_documents(self, where: Dict = None, include: List[str] = ["documents", "metadatas"]) -> Dict:
         try:
             filter_obj = None
             if where:
@@ -125,7 +128,7 @@ class QdrantVectorDB(VectorDBInterface):
                     must=[models.FieldCondition(key=key, match=models.MatchValue(value=value)) for key, value in where.items()]
                 )
 
-            scroll = self.client.scroll(
+            scroll, _ = await self.client.scroll(
                 collection_name=self.collection_name,
                 scroll_filter=filter_obj,
                 with_payload=True,
@@ -133,7 +136,7 @@ class QdrantVectorDB(VectorDBInterface):
             )
 
             documents = []
-            for point in scroll[0]:
+            for point in scroll:
                 item = {}
                 if "documents" in include:
                     item["document"] = point.payload.get("document")
@@ -147,14 +150,14 @@ class QdrantVectorDB(VectorDBInterface):
             logger.error(f"Error getting documents with filter {where}: {e}")
             raise
 
-    def get_all_doc_names(self) -> List[str]:
+    async def get_all_doc_names(self) -> List[str]:
         try:
-            scroll = self.client.scroll(
+            scroll, _ = await self.client.scroll(
                 collection_name=self.collection_name,
                 with_payload=True,
                 limit=1000
             )
-            doc_names = list({point.payload.get("doc_name") for point in scroll[0] if point.payload.get("doc_name")})
+            doc_names = list({point.payload.get("doc_name") for point in scroll if point.payload.get("doc_name")})
             logger.info(f"Retrieved {len(doc_names)} document names.")
             return doc_names
         except Exception as e:

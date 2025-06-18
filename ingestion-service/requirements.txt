@@ -13,7 +13,7 @@ redis
 pdfplumber
 numpy<2
 sentence-transformers
-qdrant-client
+qdrant-client[http] >= 1.6.0
 python-dotenv
 einops
 openai

@@ -1,14 +1,12 @@
-# ai/openai_ai_engine.py
-
 import os
-import openai
 from typing import List, Dict
+from openai import AsyncOpenAI
 from ai_engine.ai_engine_interface import AIEngine
 from utils.logger import setup_logger
 
 logger = setup_logger("openai-ai-engine")
 
-openai.api_key = os.getenv("OPENAI_API_KEY")
+client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
 class OpenAIAIEngine(AIEngine):
@@ -26,10 +24,10 @@ class OpenAIAIEngine(AIEngine):
         logger.info(f"Rerank Model: {self.rerank_model}")
         logger.info("OpenAIAIEngine initialized.")
 
-    def embed_texts(self, texts: List[str]) -> List[List[float]]:
+    async def embed_texts(self, texts: List[str]) -> List[List[float]]:
         logger.info(f"Generating embeddings for {len(texts)} texts using {self.embedding_model}")
         try:
-            response = openai.embeddings.create(
+            response = await client.embeddings.create(
                 input=texts,
                 model=self.embedding_model
             )
@@ -39,11 +37,11 @@ class OpenAIAIEngine(AIEngine):
             logger.error(f"OpenAI embedding failed: {e}")
             raise RuntimeError(f"OpenAI embedding failed: {e}")
 
-    def summarize(self, text: str) -> str:
+    async def summarize(self, text: str) -> str:
         logger.info("Generating summary with OpenAI...")
         prompt = f"Summarize the following text:\n\n{text}"
         try:
-            response = openai.chat.completions.create(
+            response = await client.chat.completions.create(
                 model=self.summarizer_model,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.3,
@@ -56,11 +54,11 @@ class OpenAIAIEngine(AIEngine):
             logger.error(f"OpenAI summarization failed: {e}")
             raise RuntimeError(f"OpenAI summarization failed: {e}")
 
-    def answer_question(self, question: str, context: str) -> Dict[str, any]:
+    async def answer_question(self, question: str, context: str) -> Dict[str, any]:
         logger.info(f"Answering question using OpenAI: {question}")
         prompt = f"Context:\n{context}\n\nQuestion: {question}\nAnswer:"
         try:
-            response = openai.chat.completions.create(
+            response = await client.chat.completions.create(
                 model=self.qa_model,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.2,
@@ -70,19 +68,19 @@ class OpenAIAIEngine(AIEngine):
             logger.info("Question answered successfully.")
             return {
                 "answer": answer,
-                "score": 1.0  # Static since OpenAI doesn't provide confidence scores
+                "score": 1.0  # Static, no confidence returned by OpenAI
             }
         except Exception as e:
             logger.error(f"OpenAI QA failed: {e}")
             raise RuntimeError(f"OpenAI QA failed: {e}")
 
-    def rerank(self, query: str, docs: List[Dict]) -> List[Dict]:
+    async def rerank(self, query: str, docs: List[Dict]) -> List[Dict]:
         logger.info(f"Reranking {len(docs)} documents using {self.rerank_model} for query: {query}")
         try:
             for i, doc in enumerate(docs):
                 prompt = f"Rate how relevant this document is to the query.\n\nQuery: {query}\n\nDocument:\n{doc['document']}\n\nRelevance (0-1):"
                 try:
-                    response = openai.chat.completions.create(
+                    response = await client.chat.completions.create(
                         model=self.rerank_model,
                         messages=[{"role": "user", "content": prompt}],
                         temperature=0.0,
