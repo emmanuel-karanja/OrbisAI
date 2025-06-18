@@ -20,7 +20,16 @@ load_dotenv()
 
 
 class KenyaLawWebCrawler:
-    def __init__(self, start_url, max_depth, download_root, max_workers,rate_limit_delay=1,retry_count=3,user_agent="Mozilla",timeout=10,save_threshold=25):
+    def __init__(self, 
+                  start_url,
+                  max_depth,
+                  download_root, 
+                  max_workers,
+                  rate_limit_delay=1,
+                  retry_count=3,
+                  user_agent="Mozilla",
+                  timeout=10,
+                  save_threshold=25):
         self.start_url = start_url
         self.max_depth = max_depth
         self.download_root = download_root
@@ -76,6 +85,7 @@ class KenyaLawWebCrawler:
             self.save_index()
             self.logger.info("🧹 Cleanup complete. Exiting.")
 
+    #DFS
     def crawl_worker(self):
         while not self.shutdown_event.is_set():
             with self.visited_lock:
