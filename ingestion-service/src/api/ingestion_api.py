@@ -3,7 +3,7 @@ from services.ingest_service import IngestService
 from ai_engine.local_ai_engine import LocalAIEngine
 # from ai_engine.openai_ai_engine import OpenAIAIEngine
 from utils.logger import setup_logger
-from utils.redis_client import init_redis
+from utils.redis_client import init_redis,get_redis
 from api.routes.ingestion_routes import register_ingestion_routes
 import os
 
@@ -17,8 +17,11 @@ def create_ingestion_app() -> FastAPI:
 
     @app.on_event("startup")
     async def startup_event():
-        logger.info("Initializing AI engine...")
+        logger.info("Initializing Redis...")
         await init_redis()
+        if get_redis():
+            logger.info("Redis successfully initialized...")
+        logger.info("Initializing AI engine...")
         ai_engine = LocalAIEngine()  # Switch to OpenAIAIEngine if needed
         # ai_engine=OpenAIAIEngine()
         app.state.ingest_service = IngestService(ai_engine)

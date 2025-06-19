@@ -16,7 +16,7 @@ LOG_DIR = os.getenv("LOG_DIR", "logs")
 logger = setup_logger(name="document_processor", log_dir=LOG_DIR, log_to_file=True)
 
 MAX_CHUNK_SIZE=os.getenv("MAX_CHUNK_SIZE",500)
-CHUNK_OVERLAP=os.getnev("CHUNK_OVERLAP",100)
+CHUNK_OVERLAP=os.getenv("CHUNK_OVERLAP",100)
 class AsyncDocumentProcessor:
     def __init__(self):
         self.splitter = RecursiveCharacterTextSplitter(chunk_size=MAX_CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP)
