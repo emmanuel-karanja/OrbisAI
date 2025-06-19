@@ -1,20 +1,20 @@
 import os
 import base64
-import re
 import magic  # pip install python-magic
-from pydantic import BaseModel, validator, root_validator, Field, ValidationError
+from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
 
 ALLOWED_EXTENSIONS = {'.pdf', '.txt', '.md'}
-MAX_FILE_SIZE_MB = 10  # Max ~10MB decoded
+MAX_FILE_SIZE_MB = 10
 MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
 
 
 class IngestionRequest(BaseModel):
     filename: str
-    content: str  # Base64 string
+    content: str  # base64-encoded string
 
-    @validator("filename")
-    def validate_filename(cls, v):
+    @field_validator("filename", mode="before")
+    @classmethod
+    def validate_filename(cls, v: str) -> str:
         if not v:
             raise ValueError("Filename is required")
         if ".." in v or "/" in v or "\\" in v:
@@ -24,8 +24,9 @@ class IngestionRequest(BaseModel):
             raise ValueError(f"Unsupported file type: {ext}")
         return v
 
-    @validator("content")
-    def validate_base64_content(cls, v):
+    @field_validator("content", mode="before")
+    @classmethod
+    def validate_base64_content(cls, v: str) -> str:
         try:
             decoded = base64.b64decode(v, validate=True)
         except Exception:
@@ -34,32 +35,22 @@ class IngestionRequest(BaseModel):
             raise ValueError(f"Decoded file exceeds {MAX_FILE_SIZE_MB}MB size limit")
         return v
 
-    @root_validator
-    def validate_file_mime_type(cls, values):
-        filename = values.get("filename")
-        content = values.get("content")
-
-        if not filename or not content:
-            return values  # Skip further checks
-
-        ext = os.path.splitext(filename)[1].lower()
-        decoded = base64.b64decode(content)
+    @model_validator(mode="after")
+    def validate_file_mime_type(self) -> "IngestionRequest":
+        ext = os.path.splitext(self.filename)[1].lower()
+        decoded = base64.b64decode(self.content)
 
         try:
             mime = magic.from_buffer(decoded, mime=True)
         except Exception as e:
             raise ValueError(f"Failed to detect MIME type: {e}")
 
-        valid = False
-        if ext == ".pdf" and mime == "application/pdf":
-            valid = True
-        elif ext in {".txt", ".md"} and mime.startswith("text/"):
-            valid = True
-
-        if not valid:
+        if ext == ".pdf" and mime != "application/pdf":
+            raise ValueError(f"File type mismatch: {ext} does not match detected MIME type '{mime}'")
+        elif ext in {".txt", ".md"} and not mime.startswith("text/"):
             raise ValueError(f"File type mismatch: {ext} does not match detected MIME type '{mime}'")
 
-        return values
+        return self
 
 
 class QueryRequest(BaseModel):

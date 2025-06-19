@@ -4,19 +4,18 @@ markdown
 bs4
 transformers
 langchain
-transformers
 pydantic
 fastapi
-torch==2.6.0+cpu
+torch==2.6.0  # Remove +cpu unless extra index is provided
 uvicorn[standard]
 redis
 pdfplumber
 numpy<2
 sentence-transformers
-qdrant-client[http] >= 1.6.0
+qdrant-client[http]>=1.6.0
 python-dotenv
 einops
 openai
 tqdm
 aiohttp
-magic
+python-magic

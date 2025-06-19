@@ -1,7 +1,7 @@
 from fastapi import FastAPI, BackgroundTasks, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
-from models.local_models import IngestRequest, QueryRequest
+from models.local_models import IngestionRequest, QueryRequest
 
 
 def register_ingestion_routes(app: FastAPI, logger):
@@ -10,7 +10,7 @@ def register_ingestion_routes(app: FastAPI, logger):
         return {"status": "ok"}
 
     @app.post("/ingest")
-    async def ingest(request: IngestRequest, background_tasks: BackgroundTasks):
+    async def ingest(request: IngestionRequest, background_tasks: BackgroundTasks):
         try:
             logger.info(f"Received ingestion request for: {request.filename}")
             background_tasks.add_task(app.state.ingest_service.ingest_document, request)

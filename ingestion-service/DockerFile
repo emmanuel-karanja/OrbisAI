@@ -2,14 +2,16 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install build tools and network tools with retry logic
+# Install build tools, libmagic, and networking tools with retry logic
 RUN set -e; \
     for i in 1 2 3; do \
         apt-get update && \
         apt-get install -y --no-install-recommends \
             build-essential \
             curl \
-            iputils-ping && \
+            iputils-ping \
+            libmagic1 \
+            libmagic-dev && \
         rm -rf /var/lib/apt/lists/* && break || sleep 5; \
     done
 
@@ -37,12 +39,10 @@ RUN set -e; \
 # Copy application code
 COPY . .
 
-# Optionally include static or config files
-# COPY static/ ./static/
-
-
 # Expose FastAPI port
 EXPOSE 8001
+
 ENV PYTHONPATH="${PYTHONPATH}:/app/src"
+
 # Run the FastAPI app
 CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8001"]
