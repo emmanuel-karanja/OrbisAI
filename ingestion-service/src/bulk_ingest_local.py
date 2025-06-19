@@ -12,9 +12,10 @@ from dotenv import load_dotenv
 
 from services.ingest_service import IngestService
 from ai_engine.local_ai_engine import LocalAIEngine
-from utils.logger import setup_logger  # Your webhook/file logger
+from utils.redis_client import get_redis
+from utils.logger import setup_logger
 
-# Load environment
+# Load .env configuration
 load_dotenv(override=True)
 
 DEFAULT_INPUT_DIR = os.getenv("DOCS_SOURCE_DIR", "C:\\Users\\ZBOOK\\Downloads\\kenya_laws\\pdfs")
@@ -78,8 +79,18 @@ class BulkFileIngestor:
             logger.error(f"Failed to encode file {path.name}: {e}")
             return ""
 
-    async def _ingest_file(self, path: Path, semaphore: asyncio.Semaphore):
+    async def _track_progress(self, redis_conn, filename, status):
         try:
+            key = f"bulk_ingest:{filename}"
+            await redis_conn.set(key, status)
+        except Exception as e:
+            logger.warning(f"Failed to set Redis progress for {filename}: {e}")
+
+    async def _ingest_file(self, path: Path, semaphore: asyncio.Semaphore):
+        redis_conn = await get_redis()
+        try:
+            await self._track_progress(redis_conn, path.name, "started")
+
             content = self._encode_file(path)
             if not content:
                 raise ValueError("Encoded content is empty")
@@ -88,20 +99,28 @@ class BulkFileIngestor:
 
             async with semaphore:
                 await self.ingest_service.ingest_document(request)
-                self._log_to(self.success_log, f"{datetime.now()} - SUCCESS - {path.name}")
-                logger.info(f"Ingested {path.name}")
-                return True
+
+            self._log_to(self.success_log, f"{datetime.now()} - SUCCESS - {path.name}")
+            await self._track_progress(redis_conn, path.name, "success")
+            logger.info(f"Ingested {path.name}")
+            return True
 
         except Exception as e:
             self._log_to(self.failure_log, f"{datetime.now()} - FAIL - {path.name} - {str(e)}")
+            await self._track_progress(redis_conn, path.name, f"failed:{str(e)}")
             logger.error(f"Failed to ingest {path.name}: {e}")
             return False
 
     async def run_ingestion(self):
+        redis_conn = await get_redis()
         try:
-            all_files = list(self.input_dir.glob(self.pattern))
+            all_files = list(self.input_dir.rglob(self.pattern))
             done_files = self._read_successful_files()
             pending_files = [f for f in all_files if f.name not in done_files]
+
+            await redis_conn.delete("bulk_ingest:all_files")
+            if pending_files:
+                await redis_conn.sadd("bulk_ingest:all_files", *[f.name for f in pending_files])
 
             logger.info(f"📁 Total: {len(all_files)} | ✅ Done: {len(done_files)} | 🚀 Pending: {len(pending_files)}")
 
