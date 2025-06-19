@@ -15,10 +15,11 @@ from utils.redis_client import get_redis  # NEW
 LOG_DIR = os.getenv("LOG_DIR", "logs")
 logger = setup_logger(name="document_processor", log_dir=LOG_DIR, log_to_file=True)
 
-
+MAX_CHUNK_SIZE=os.getenv("MAX_CHUNK_SIZE",500)
+CHUNK_OVERLAP=os.getnev("CHUNK_OVERLAP",100)
 class AsyncDocumentProcessor:
     def __init__(self):
-        self.splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=100)
+        self.splitter = RecursiveCharacterTextSplitter(chunk_size=MAX_CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP)
 
     async def extract_text_and_metadata(self, filename: str, base64_content: str) -> List[Dict]:
         logger.info(f"Extracting text from file: {filename}")
@@ -32,7 +33,7 @@ class AsyncDocumentProcessor:
                 pages = await asyncio.to_thread(self._extract_from_pdf, content_bytes)
             elif ext == "md":
                 pages = await asyncio.to_thread(self._extract_from_md, content_bytes)
-            elif ext in {"akn", "xml"}:
+            elif ext in {"akn", "xml","html"}:
                 pages = await asyncio.to_thread(self._extract_from_xml, content_bytes)
             else:
                 try:
