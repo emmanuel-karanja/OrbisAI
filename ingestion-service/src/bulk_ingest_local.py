@@ -1,80 +1,167 @@
 import os
+import sys
 import base64
 import asyncio
-import aiohttp
-import aiofiles
 import argparse
-from aiohttp import ClientSession
+from pathlib import Path
+from datetime import datetime
+from typing import List
+from pydantic import BaseModel
+from tqdm.asyncio import tqdm_asyncio
 from dotenv import load_dotenv
 
-load_dotenv()
+from services.ingest_service import IngestService
+from ai_engine.local_ai_engine import LocalAIEngine
+from utils.logger import setup_logger  # Your webhook/file logger
+
+# Load environment
+load_dotenv(override=True)
+
+DEFAULT_INPUT_DIR = os.getenv("DOCS_SOURCE_DIR", "C:\\Users\\ZBOOK\\Downloads\\kenya_laws\\pdfs")
+DEFAULT_LOG_DIR = os.getenv("LOG_DIR", "./logs")
+DEFAULT_CONCURRENCY = int(os.getenv("BULK_INGEST_CONCURRENCY", 20))
+DEFAULT_PATTERN = "*.*"
+
+logger = setup_logger(name="bulk-ingestor", log_dir=DEFAULT_LOG_DIR)
 
 
-class AsyncDocumentIngestor:
-    def __init__(self, source_dir: str = None, api_url: str = None, concurrency: int = 10):
-        self.source_dir = source_dir or os.getenv("DOCS_SOURCE_DIR", "./documents")
-        self.api_url = api_url or os.getenv("INGEST_API_URL", "http://localhost:8001/ingest")
+class IngestionRequest(BaseModel):
+    filename: str
+    content: str
+
+
+class BulkFileIngestor:
+    def __init__(self, input_dir: str, log_dir: str, concurrency: int = 20, pattern: str = "*.*"):
+        self.input_dir = Path(input_dir)
+        self.log_dir = Path(log_dir)
+        self.pattern = pattern
         self.concurrency = concurrency
-        self.semaphore = asyncio.Semaphore(concurrency)
 
-    async def _encode_file_to_base64(self, path: str) -> str:
+        self.success_log = self.log_dir / "success.log"
+        self.failure_log = self.log_dir / "failed.log"
+
+        os.makedirs(self.log_dir, exist_ok=True)
+
+        self.ai_engine = LocalAIEngine()
+        self.ingest_service = IngestService(ai_engine=self.ai_engine)
+
+    def _log_to(self, file: Path, message: str):
         try:
-            async with aiofiles.open(path, "rb") as f:
-                content = await f.read()
-                return base64.b64encode(content).decode("utf-8")
+            with open(file, "a") as f:
+                f.write(message.strip() + "\n")
         except Exception as e:
-            print(f"❌ Error reading file {path}: {e}")
-            return None
+            logger.warning(f"Could not write to log file {file}: {e}")
 
-    async def _post_document(self, session: ClientSession, filename: str, content: str, path: str):
-        if not content:
-            return
+    def _read_successful_files(self) -> set:
         try:
-            payload = {
-                "filename": filename,
-                "content": content
-            }
-            async with session.post(self.api_url, json=payload, timeout=60) as response:
-                text = await response.text()
-                status = "✅" if response.status == 200 else "⚠️"
-                print(f"{status} {filename} → {response.status}: {text}")
+            if not self.success_log.exists():
+                return set()
+            return {line.split(" - ")[2].strip() for line in self.success_log.read_text().splitlines()}
         except Exception as e:
-            print(f"❌ Failed to upload {filename}: {e}")
+            logger.warning(f"Failed to read success log: {e}")
+            return set()
 
-    async def _process_file(self, session: ClientSession, path: str, fname: str):
-        async with self.semaphore:
-            content = await self._encode_file_to_base64(path)
-            await self._post_document(session, fname, content, path)
+    def _read_failed_files(self) -> List[str]:
+        try:
+            if not self.failure_log.exists():
+                return []
+            return [line.split(" - ")[2].strip() for line in self.failure_log.read_text().splitlines()]
+        except Exception as e:
+            logger.warning(f"Failed to read failure log: {e}")
+            return []
 
-    async def ingest(self):
-        if not os.path.isdir(self.source_dir):
-            print(f"❌ Source directory does not exist: {self.source_dir}")
-            return
+    def _encode_file(self, path: Path) -> str:
+        try:
+            with open(path, "rb") as f:
+                return base64.b64encode(f.read()).decode("utf-8")
+        except Exception as e:
+            logger.error(f"Failed to encode file {path.name}: {e}")
+            return ""
 
-        print(f"📁 Scanning: {self.source_dir}")
-        print(f"📡 API Endpoint: {self.api_url}")
+    async def _ingest_file(self, path: Path, semaphore: asyncio.Semaphore):
+        try:
+            content = self._encode_file(path)
+            if not content:
+                raise ValueError("Encoded content is empty")
 
-        tasks = []
-        async with aiohttp.ClientSession() as session:
-            for root, _, files in os.walk(self.source_dir):
-                for fname in files:
-                    path = os.path.join(root, fname)
-                    tasks.append(self._process_file(session, path, fname))
-            await asyncio.gather(*tasks)
+            request = IngestionRequest(filename=path.name, content=content)
 
-        print("🚀 Ingestion completed.")
+            async with semaphore:
+                await self.ingest_service.ingest_document(request)
+                self._log_to(self.success_log, f"{datetime.now()} - SUCCESS - {path.name}")
+                logger.info(f"Ingested {path.name}")
+                return True
+
+        except Exception as e:
+            self._log_to(self.failure_log, f"{datetime.now()} - FAIL - {path.name} - {str(e)}")
+            logger.error(f"Failed to ingest {path.name}: {e}")
+            return False
+
+    async def run_ingestion(self):
+        try:
+            all_files = list(self.input_dir.glob(self.pattern))
+            done_files = self._read_successful_files()
+            pending_files = [f for f in all_files if f.name not in done_files]
+
+            logger.info(f"📁 Total: {len(all_files)} | ✅ Done: {len(done_files)} | 🚀 Pending: {len(pending_files)}")
+
+            if not pending_files:
+                logger.info("Nothing to ingest.")
+                return
+
+            semaphore = asyncio.Semaphore(self.concurrency)
+            tasks = [self._ingest_file(path, semaphore) for path in pending_files]
+            await tqdm_asyncio.gather(*tasks)
+
+        except Exception as e:
+            logger.critical(f"Ingestion run failed: {e}")
+
+    async def retry_failures(self):
+        try:
+            failed_files = self._read_failed_files()
+            if not failed_files:
+                logger.info("No failed files to retry.")
+                return
+
+            logger.info(f"🔁 Retrying {len(failed_files)} failed files...")
+            paths = [self.input_dir / fname for fname in failed_files if (self.input_dir / fname).exists()]
+            self.failure_log.unlink(missing_ok=True)
+
+            semaphore = asyncio.Semaphore(self.concurrency)
+            tasks = [self._ingest_file(path, semaphore) for path in paths]
+            await tqdm_asyncio.gather(*tasks)
+
+        except Exception as e:
+            logger.critical(f"Retry run failed: {e}")
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Bulk file ingestion CLI")
+
+    parser.add_argument("command", choices=["run", "retry"], help="Choose 'run' or 'retry'")
+    parser.add_argument("--input-dir", default=DEFAULT_INPUT_DIR, help="Directory containing documents")
+    parser.add_argument("--log-dir", default=DEFAULT_LOG_DIR, help="Directory to store logs")
+    parser.add_argument("--concurrency", type=int, default=DEFAULT_CONCURRENCY, help="Concurrent ingestion limit")
+    parser.add_argument("--pattern", default=DEFAULT_PATTERN, help="File pattern to match, e.g. '*.pdf'")
+
+    return parser.parse_args()
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Async Document Ingestor")
-    parser.add_argument("--source-dir", help="Path to document directory")
-    parser.add_argument("--api", help="Ingestion API endpoint")
-    parser.add_argument("--concurrency", type=int, default=10, help="Max concurrent uploads")
-    args = parser.parse_args()
+    try:
+        args = parse_args()
 
-    ingestor = AsyncDocumentIngestor(
-        source_dir=args.source_dir,
-        api_url=args.api,
-        concurrency=args.concurrency
-    )
-    asyncio.run(ingestor.ingest())
+        ingestor = BulkFileIngestor(
+            input_dir=args.input_dir,
+            log_dir=args.log_dir,
+            concurrency=args.concurrency,
+            pattern=args.pattern
+        )
+
+        if args.command == "run":
+            asyncio.run(ingestor.run_ingestion())
+        elif args.command == "retry":
+            asyncio.run(ingestor.retry_failures())
+
+    except Exception as e:
+        logger.critical(f"Startup error: {e}")
