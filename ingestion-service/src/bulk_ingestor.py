@@ -7,15 +7,17 @@ import signal
 import random
 from pathlib import Path
 from datetime import datetime
+import traceback
 from typing import List
 from pydantic import BaseModel
 from tqdm.asyncio import tqdm_asyncio
 from dotenv import load_dotenv
 from colorama import Fore, init as colorama_init
 import httpx
+import platform
+import redis.asyncio as aioredis  # ✅ Direct Redis import
 
 from utils.logger import setup_logger
-from utils.redis_client import get_redis
 
 colorama_init(autoreset=True)
 load_dotenv(override=True)
@@ -30,9 +32,11 @@ logger = setup_logger(name="bulk-ingestor", log_dir=DEFAULT_LOG_DIR)
 
 shutdown_event = asyncio.Event()
 
+
 class IngestionRequest(BaseModel):
     filename: str
     content: str
+
 
 class BulkFileIngestor:
     def __init__(self, input_dir: str, log_dir: str, concurrency: int = 20, pattern: str = "*.*"):
@@ -44,6 +48,8 @@ class BulkFileIngestor:
         self.success_log = self.log_dir / "success.log"
         self.failure_log = self.log_dir / "failed.log"
         os.makedirs(self.log_dir, exist_ok=True)
+
+        self.redis = aioredis.Redis(host="localhost", port=6379, decode_responses=True)  # ✅ Direct Redis
 
     def _log_to(self, file: Path, message: str):
         try:
@@ -78,17 +84,14 @@ class BulkFileIngestor:
             logger.error(f"Failed to encode file {path.name}: {e}")
             return ""
 
-    async def _track_progress(self, redis_conn, filename, status):
-        if not redis_conn:
-            return
+    async def _track_progress(self, filename, status):
         try:
             key = f"bulk_ingest:{filename}"
-            await redis_conn.set(key, status)
+            await self.redis.set(key, status)
         except Exception as e:
             logger.warning(f"[Redis] Could not track {filename}: {e}")
 
     async def _ingest_file(self, path: Path, index: int, total: int, semaphore: asyncio.Semaphore):
-        redis_conn = await get_redis()
         try:
             if shutdown_event.is_set():
                 return False
@@ -104,7 +107,7 @@ class BulkFileIngestor:
             payload = request.dict()
 
             async with semaphore:
-                await self._track_progress(redis_conn, path.name, "started")
+                await self._track_progress(path.name, "started")
 
                 retries = 5
                 delay = 1
@@ -122,27 +125,25 @@ class BulkFileIngestor:
                         await asyncio.sleep(sleep_time)
 
             self._log_to(self.success_log, f"{datetime.now()} - SUCCESS - {path.name}")
-            await self._track_progress(redis_conn, path.name, "success")
+            await self._track_progress(path.name, "success")
             logger.info(Fore.GREEN + f"[✓] Completed: {path.name}")
             return True
 
         except Exception as e:
             self._log_to(self.failure_log, f"{datetime.now()} - FAIL - {path.name} - {str(e)}")
-            await self._track_progress(redis_conn, path.name, f"failed:{str(e)}")
+            await self._track_progress(path.name, f"failed:{str(e)}")
             logger.error(Fore.RED + f"[FAIL] {path.name} => {e}")
             return False
 
     async def run_ingestion(self):
-        redis_conn = await get_redis()
         try:
             all_files = list(self.input_dir.rglob(self.pattern))
             done_files = self._read_successful_files()
             pending_files = [f for f in all_files if f.name not in done_files]
 
-            if redis_conn:
-                await redis_conn.delete("bulk_ingest:all_files")
-                if pending_files:
-                    await redis_conn.sadd("bulk_ingest:all_files", *[f.name for f in pending_files])
+            await self.redis.delete("bulk_ingest:all_files")
+            if pending_files:
+                await self.redis.sadd("bulk_ingest:all_files", *[f.name for f in pending_files])
 
             logger.info(f"📁 Total: {len(all_files)} | ✅ Done: {len(done_files)} | 🚀 Pending: {len(pending_files)}")
             if not pending_files:
@@ -161,7 +162,6 @@ class BulkFileIngestor:
             logger.critical(Fore.RED + f"[CRITICAL] Ingestion run failed: {e}")
 
     async def retry_failures(self):
-        redis_conn = await get_redis()
         try:
             failed_files = self._read_failed_files()
             if not failed_files:
@@ -183,6 +183,21 @@ class BulkFileIngestor:
         except Exception as e:
             logger.critical(Fore.RED + f"[CRITICAL] Retry run failed: {e}")
 
+
+def setup_signal_handlers():
+    def shutdown():
+        print(Fore.RED + "\n[SHUTDOWN] Graceful exit triggered...")
+        shutdown_event.set()
+
+    if platform.system() == "Windows":
+        signal.signal(signal.SIGINT, lambda s, f: shutdown())
+        signal.signal(signal.SIGTERM, lambda s, f: shutdown())
+    else:
+        loop = asyncio.get_event_loop()
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            loop.add_signal_handler(sig, shutdown)
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Bulk file ingestion CLI")
     parser.add_argument("command", choices=["run", "retry"], help="Choose 'run' or 'retry'")
@@ -192,32 +207,30 @@ def parse_args():
     parser.add_argument("--pattern", default=DEFAULT_PATTERN, help="File pattern to match, e.g. '*.pdf'")
     return parser.parse_args()
 
-def setup_signal_handlers():
-    loop = asyncio.get_event_loop()
 
-    def shutdown():
-        print(Fore.RED + "\n[SHUTDOWN] Graceful exit triggered...")
-        shutdown_event.set()
+async def main():
+    args = parse_args()
+    setup_signal_handlers()
 
-    for sig in (signal.SIGINT, signal.SIGTERM):
-        loop.add_signal_handler(sig, shutdown)
+    ingestor = BulkFileIngestor(
+        input_dir=args.input_dir,
+        log_dir=args.log_dir,
+        concurrency=args.concurrency,
+        pattern=args.pattern
+    )
+
+    if args.command == "run":
+        await ingestor.run_ingestion()
+    elif args.command == "retry":
+        await ingestor.retry_failures()
+
+    await shutdown_event.wait()
+    logger.info(Fore.LIGHTMAGENTA_EX + "[EXIT] All tasks completed. Shutting down.")
+
 
 if __name__ == "__main__":
     try:
-        setup_signal_handlers()
-        args = parse_args()
-
-        ingestor = BulkFileIngestor(
-            input_dir=args.input_dir,
-            log_dir=args.log_dir,
-            concurrency=args.concurrency,
-            pattern=args.pattern
-        )
-
-        if args.command == "run":
-            asyncio.run(ingestor.run_ingestion())
-        elif args.command == "retry":
-            asyncio.run(ingestor.retry_failures())
-
+        asyncio.run(main())
     except Exception as e:
         logger.critical(Fore.RED + f"[CRITICAL] Startup error: {e}")
+        traceback.print_exc()

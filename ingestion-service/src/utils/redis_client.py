@@ -13,15 +13,11 @@ REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
 
 _redis_instance: redis.Redis = None
 
-async def get_redis(host: str = None, port: int = None):
-    redis_host = host or os.getenv("REDIS_HOST", "redis")
-    redis_port = port or int(os.getenv("REDIS_PORT", 6379))
-
-    return redis.Redis(
-        host=redis_host,
-        port=redis_port,
-        decode_responses=True
-    )
+async def get_redis() -> redis.Redis:
+    global _redis_instance
+    if _redis_instance is None:
+        await init_redis()
+    return _redis_instance
 
 async def init_redis() -> None:
     global _redis_instance
