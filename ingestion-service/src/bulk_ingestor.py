@@ -90,8 +90,8 @@ from utils.logger import setup_logger
 colorama_init(autoreset=True)
 load_dotenv(override=True)
 
-DEFAULT_INPUT_DIR = os.getenv("DOCS_SOURCE_DIR", "C:\\Users\\ZBOOK\\Downloads\\kenya_laws\\pdfs")
-DEFAULT_LOG_DIR = os.getenv("LOG_DIR", "./logs")
+DEFAULT_INPUT_DIR = os.getenv("DOCS_SOURCE_DIR", "../file_source")
+DEFAULT_LOG_DIR = os.getenv("LOG_DIR", "../logs")
 DEFAULT_CONCURRENCY = int(os.getenv("BULK_INGEST_CONCURRENCY", 20))
 DEFAULT_PATTERN = "*.*"
 INGEST_ENDPOINT = os.getenv("INGEST_ENDPOINT", "http://localhost:8001/ingest")
@@ -181,10 +181,12 @@ class BulkFileIngestor:
                     except Exception as e:
                         if attempt == retries:
                             raise e
+                        # Exponential backoff
                         sleep_time = delay * (2 ** attempt) + random.uniform(0, 1)
                         logger.warning(f"[Retry] {path.name} in {sleep_time:.1f}s (attempt {attempt}) due to: {e}")
                         await asyncio.sleep(sleep_time)
 
+            # Keep track of failed and succesful after retry
             self.success_map[path.name] = datetime.now().isoformat()
             if path.name in self.failure_map:
                 del self.failure_map[path.name]
@@ -200,6 +202,7 @@ class BulkFileIngestor:
 
     async def run_ingestion(self):
         try:
+            # Recursively get all the files that match the pattern
             all_files = list(self.input_dir.rglob(self.pattern))
             done_files = set(self.success_map.keys())
             pending_files = [f for f in all_files if f.name not in done_files]
@@ -212,6 +215,12 @@ class BulkFileIngestor:
             if not pending_files:
                 logger.info("Nothing to ingest.")
                 return
+            
+            # - Prepare and execute concurrent ingestion tasks with limited concurrency:
+            # - Use a semaphore to restrict the number of concurrent tasks to self.concurrency
+            # - For each pending file, create an async ingestion task with progress metadata
+            # - Run all tasks concurrently using tqdm_asyncio.gather to show a progress bar
+            # - After all tasks finish, write updated success and failure maps to their respective JSON files
 
             semaphore = asyncio.Semaphore(self.concurrency)
             tasks = [
