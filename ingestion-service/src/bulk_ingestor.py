@@ -1,5 +1,73 @@
+"""
+bulk_ingestor.py
+
+Asynchronous bulk file ingestion tool for uploading files (e.g. PDFs) to an external ingestion API. These files
+will be embedded and persisted into a vectorDB for indexed search via RAG(or any other tool that needs that)
+
+--------------------------------------------------------------------------------
+🔧 WHAT IT DOES
+--------------------------------------------------------------------------------
+- Scans a directory for files matching a pattern (e.g. *.pdf)
+- Reads and base64-encodes each file
+- Sends the encoded content to a REST API endpoint (`INGEST_ENDPOINT`)
+- Tracks progress in Redis and saves ingestion results to JSON files. Progress is tracked per file e.g. started, ongoing, successful or failed
+  and the data can be scraped for display in a dashboard.
+- Retries failed files with exponential backoff
+- Handles graceful shutdown on SIGINT/SIGTERM
+- Offers two commands: 
+    - `run`   → Process all new files
+    - `retry` → Reprocess previously failed files
+
+--------------------------------------------------------------------------------
+🚀 FEATURES
+--------------------------------------------------------------------------------
+- Async ingestion using `asyncio` and `httpx`
+- Concurrency control using `asyncio.Semaphore`
+- Retry with exponential backoff and jitter
+- Progress tracking via Redis (`bulk_ingest:<filename>`)
+- File result tracking via:
+    - `success.json` → files ingested successfully
+    - `failed.json`  → files that failed with errors
+- Resilient to I/O, network, and Redis failures
+- Terminal-friendly colored output (via `colorama`)
+- Works on both Windows and Unix (with platform-aware signal handling)
+
+--------------------------------------------------------------------------------
+📁 DIRECTORY STRUCTURE EXPECTED
+--------------------------------------------------------------------------------
+Environment Variables (via .env or OS env):
+- DOCS_SOURCE_DIR: path to the input folder of documents
+- LOG_DIR: folder for saving logs and result JSON files
+- INGEST_ENDPOINT: target API endpoint for ingestion
+- BULK_INGEST_CONCURRENCY: max parallel ingestion workers
+
+--------------------------------------------------------------------------------
+✅ USAGE
+--------------------------------------------------------------------------------
+# Run ingestion for all pending files
+$ python bulk_ingestor.py run
+
+# Retry only failed files
+$ python bulk_ingestor.py retry
+
+Optional flags:
+    --input-dir      (override DOCS_SOURCE_DIR)
+    --log-dir        (override LOG_DIR)
+    --concurrency    (override BULK_INGEST_CONCURRENCY)
+    --pattern        (file pattern like '*.pdf')
+
+--------------------------------------------------------------------------------
+🧠 AUTHOR NOTES
+--------------------------------------------------------------------------------
+- Redis is used for live tracking (optional but recommended)
+- JSON replaces log parsing for ingestion history (race-safe at batch level)
+- Graceful shutdown ensures in-flight requests finish before exiting
+
+"""
+
 import os
 import sys
+import json
 import base64
 import asyncio
 import argparse
@@ -8,14 +76,14 @@ import random
 from pathlib import Path
 from datetime import datetime
 import traceback
-from typing import List
+from typing import List, Dict
 from pydantic import BaseModel
 from tqdm.asyncio import tqdm_asyncio
 from dotenv import load_dotenv
 from colorama import Fore, init as colorama_init
 import httpx
 import platform
-import redis.asyncio as aioredis  # ✅ Direct Redis import
+import redis.asyncio as aioredis
 
 from utils.logger import setup_logger
 
@@ -45,36 +113,29 @@ class BulkFileIngestor:
         self.pattern = pattern
         self.concurrency = concurrency
 
-        self.success_log = self.log_dir / "success.log"
-        self.failure_log = self.log_dir / "failed.log"
         os.makedirs(self.log_dir, exist_ok=True)
+        self.success_json = self.log_dir / "success.json"
+        self.failure_json = self.log_dir / "failed.json"
+        self.redis = aioredis.Redis(host="localhost", port=6379, decode_responses=True)
 
-        self.redis = aioredis.Redis(host="localhost", port=6379, decode_responses=True)  # ✅ Direct Redis
+        self.success_map = self._read_json(self.success_json)
+        self.failure_map = self._read_json(self.failure_json)
 
-    def _log_to(self, file: Path, message: str):
+    def _read_json(self, file: Path) -> Dict[str, str]:
         try:
-            with open(file, "a") as f:
-                f.write(message.strip() + "\n")
+            if file.exists():
+                with open(file, "r", encoding="utf-8") as f:
+                    return json.load(f)
         except Exception as e:
-            logger.warning(f"Could not write to log file {file}: {e}")
+            logger.warning(f"Failed to read {file.name}: {e}")
+        return {}
 
-    def _read_successful_files(self) -> set:
+    def _write_json(self, file: Path, data: Dict[str, str]):
         try:
-            if not self.success_log.exists():
-                return set()
-            return {line.split(" - ")[2].strip() for line in self.success_log.read_text().splitlines()}
+            with open(file, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2)
         except Exception as e:
-            logger.warning(f"Failed to read success log: {e}")
-            return set()
-
-    def _read_failed_files(self) -> List[str]:
-        try:
-            if not self.failure_log.exists():
-                return []
-            return [line.split(" - ")[2].strip() for line in self.failure_log.read_text().splitlines()]
-        except Exception as e:
-            logger.warning(f"Failed to read failure log: {e}")
-            return []
+            logger.error(f"Failed to write to {file.name}: {e}")
 
     def _encode_file(self, path: Path) -> str:
         try:
@@ -124,13 +185,15 @@ class BulkFileIngestor:
                         logger.warning(f"[Retry] {path.name} in {sleep_time:.1f}s (attempt {attempt}) due to: {e}")
                         await asyncio.sleep(sleep_time)
 
-            self._log_to(self.success_log, f"{datetime.now()} - SUCCESS - {path.name}")
+            self.success_map[path.name] = datetime.now().isoformat()
+            if path.name in self.failure_map:
+                del self.failure_map[path.name]
             await self._track_progress(path.name, "success")
             logger.info(Fore.GREEN + f"[✓] Completed: {path.name}")
             return True
 
         except Exception as e:
-            self._log_to(self.failure_log, f"{datetime.now()} - FAIL - {path.name} - {str(e)}")
+            self.failure_map[path.name] = f"{datetime.now().isoformat()} :: {str(e)}"
             await self._track_progress(path.name, f"failed:{str(e)}")
             logger.error(Fore.RED + f"[FAIL] {path.name} => {e}")
             return False
@@ -138,7 +201,7 @@ class BulkFileIngestor:
     async def run_ingestion(self):
         try:
             all_files = list(self.input_dir.rglob(self.pattern))
-            done_files = self._read_successful_files()
+            done_files = set(self.success_map.keys())
             pending_files = [f for f in all_files if f.name not in done_files]
 
             await self.redis.delete("bulk_ingest:all_files")
@@ -157,20 +220,22 @@ class BulkFileIngestor:
             ]
 
             await tqdm_asyncio.gather(*tasks)
+            self._write_json(self.success_json, self.success_map)
+            self._write_json(self.failure_json, self.failure_map)
 
         except Exception as e:
             logger.critical(Fore.RED + f"[CRITICAL] Ingestion run failed: {e}")
 
     async def retry_failures(self):
         try:
-            failed_files = self._read_failed_files()
+            failed_files = list(self.failure_map.keys())
             if not failed_files:
                 logger.info("No failed files to retry.")
                 return
 
             logger.info(f"🔁 Retrying {len(failed_files)} failed files...")
             paths = [self.input_dir / fname for fname in failed_files if (self.input_dir / fname).exists()]
-            self.failure_log.unlink(missing_ok=True)
+            self.failure_map.clear()
 
             semaphore = asyncio.Semaphore(self.concurrency)
             tasks = [
@@ -179,6 +244,8 @@ class BulkFileIngestor:
             ]
 
             await tqdm_asyncio.gather(*tasks)
+            self._write_json(self.success_json, self.success_map)
+            self._write_json(self.failure_json, self.failure_map)
 
         except Exception as e:
             logger.critical(Fore.RED + f"[CRITICAL] Retry run failed: {e}")
