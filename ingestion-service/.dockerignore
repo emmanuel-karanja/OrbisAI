@@ -16,4 +16,6 @@ models/
 venv/
 __pycache__
 logs/
-venv/
+.venv/
+src/.venv/
+src/logs
