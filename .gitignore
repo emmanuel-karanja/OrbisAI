@@ -1,0 +1,56 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Virtual environments
+.env/
+.venv/
+venv/
+ENV/
+env/
+pip-selfcheck.json
+
+# Logs and debug
+*.log
+logs/
+*.bak
+*.tmp
+
+# System files
+.DS_Store
+Thumbs.db
+
+# IDEs/editors
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Environment variables
+.env
+.env.*
+
+# Test and coverage
+.coverage
+htmlcov/
+.tox/
+.nox/
+.pytest_cache/
+.cache/
+
+# Redis dump files
+dump.rdb
+*.aof
+
+# Python packaging
+build/
+dist/
+*.egg-info/
+
+# Output artifacts
+success.json
+failed.json

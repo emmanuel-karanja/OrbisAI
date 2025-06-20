@@ -7,7 +7,7 @@ will be embedded and persisted into a vectorDB for indexed search via RAG(or any
 --------------------------------------------------------------------------------
 🔧 WHAT IT DOES
 --------------------------------------------------------------------------------
-- Scans a directory for files matching a pattern (e.g. *.pdf)
+- Recursively scans a directory for files matching a pattern (e.g. *.pdf)
 - Reads and base64-encodes each file
 - Sends the encoded content to a REST API endpoint (`INGEST_ENDPOINT`)
 - Tracks progress in Redis and saves ingestion results to JSON files. Progress is tracked per file e.g. started, ongoing, successful or failed
@@ -40,6 +40,7 @@ Environment Variables (via .env or OS env):
 - LOG_DIR: folder for saving logs and result JSON files
 - INGEST_ENDPOINT: target API endpoint for ingestion
 - BULK_INGEST_CONCURRENCY: max parallel ingestion workers
+- DEFAULT_FILE_PATTERNS: comma-separated file extensions, e.g. .pdf,.txt,.md,.docx,.html
 
 --------------------------------------------------------------------------------
 ✅ USAGE
@@ -54,15 +55,16 @@ Optional flags:
     --input-dir      (override DOCS_SOURCE_DIR)
     --log-dir        (override LOG_DIR)
     --concurrency    (override BULK_INGEST_CONCURRENCY)
-    --pattern        (file pattern like '*.pdf')
+    --patterns       (override DEFAULT_FILE_PATTERNS, e.g. .pdf,.txt)
 
 --------------------------------------------------------------------------------
 🧠 AUTHOR NOTES
 --------------------------------------------------------------------------------
-- Redis is used for live tracking (optional but recommended)
+- Redis is used for live tracking (optional but recommended). What this can do is present 
+   a display with progress bars showing the progress of the file currently being ingested with possibility to
+   to enrich the data.
 - JSON replaces log parsing for ingestion history (race-safe at batch level)
 - Graceful shutdown ensures in-flight requests finish before exiting
-
 """
 
 import os
@@ -93,7 +95,7 @@ load_dotenv(override=True)
 DEFAULT_INPUT_DIR = os.getenv("DOCS_SOURCE_DIR", "../file_source")
 DEFAULT_LOG_DIR = os.getenv("LOG_DIR", "../logs")
 DEFAULT_CONCURRENCY = int(os.getenv("BULK_INGEST_CONCURRENCY", 20))
-DEFAULT_PATTERN = "*.*"
+DEFAULT_PATTERN_LIST = os.getenv("DEFAULT_FILE_PATTERNS", ".pdf").split(",")
 INGEST_ENDPOINT = os.getenv("INGEST_ENDPOINT", "http://localhost:8001/ingest")
 
 logger = setup_logger(name="bulk-ingestor", log_dir=DEFAULT_LOG_DIR)
@@ -107,10 +109,10 @@ class IngestionRequest(BaseModel):
 
 
 class BulkFileIngestor:
-    def __init__(self, input_dir: str, log_dir: str, concurrency: int = 20, pattern: str = "*.*"):
+    def __init__(self, input_dir: str, log_dir: str, concurrency: int = 20, patterns: List[str] = DEFAULT_PATTERN_LIST):
         self.input_dir = Path(input_dir)
         self.log_dir = Path(log_dir)
-        self.pattern = pattern
+        self.patterns = patterns or [".pdf"]
         self.concurrency = concurrency
 
         os.makedirs(self.log_dir, exist_ok=True)
@@ -154,6 +156,7 @@ class BulkFileIngestor:
 
     async def _ingest_file(self, path: Path, index: int, total: int, semaphore: asyncio.Semaphore):
         try:
+            # Handle graceful exit
             if shutdown_event.is_set():
                 return False
 
@@ -186,7 +189,7 @@ class BulkFileIngestor:
                         logger.warning(f"[Retry] {path.name} in {sleep_time:.1f}s (attempt {attempt}) due to: {e}")
                         await asyncio.sleep(sleep_time)
 
-            # Keep track of failed and succesful after retry
+            # Keep track of failed and successful after retry
             self.success_map[path.name] = datetime.now().isoformat()
             if path.name in self.failure_map:
                 del self.failure_map[path.name]
@@ -202,8 +205,11 @@ class BulkFileIngestor:
 
     async def run_ingestion(self):
         try:
-            # Recursively get all the files that match the pattern
-            all_files = list(self.input_dir.rglob(self.pattern))
+            # Recursively get all files matching the given patterns
+            all_files = [
+                f for f in self.input_dir.rglob("*")
+                if any(f.name.endswith(ext) for ext in self.patterns)
+            ]
             done_files = set(self.success_map.keys())
             pending_files = [f for f in all_files if f.name not in done_files]
 
@@ -215,7 +221,7 @@ class BulkFileIngestor:
             if not pending_files:
                 logger.info("Nothing to ingest.")
                 return
-            
+
             # - Prepare and execute concurrent ingestion tasks with limited concurrency:
             # - Use a semaphore to restrict the number of concurrent tasks to self.concurrency
             # - For each pending file, create an async ingestion task with progress metadata
@@ -280,7 +286,7 @@ def parse_args():
     parser.add_argument("--input-dir", default=DEFAULT_INPUT_DIR, help="Directory containing documents")
     parser.add_argument("--log-dir", default=DEFAULT_LOG_DIR, help="Directory to store logs")
     parser.add_argument("--concurrency", type=int, default=DEFAULT_CONCURRENCY, help="Concurrent ingestion limit")
-    parser.add_argument("--pattern", default=DEFAULT_PATTERN, help="File pattern to match, e.g. '*.pdf'")
+    parser.add_argument("--patterns", default=','.join(DEFAULT_PATTERN_LIST), help="Comma-separated file extensions like .pdf,.txt")
     return parser.parse_args()
 
 
@@ -292,7 +298,7 @@ async def main():
         input_dir=args.input_dir,
         log_dir=args.log_dir,
         concurrency=args.concurrency,
-        pattern=args.pattern
+        patterns=args.patterns.split(",")
     )
 
     if args.command == "run":
