@@ -118,6 +118,8 @@ class BulkFileIngestor:
         os.makedirs(self.log_dir, exist_ok=True)
         self.success_json = self.log_dir / "success.json"
         self.failure_json = self.log_dir / "failed.json"
+
+        # We may need to move this to separate project on its own in future, and hence have its own thing going on of .env
         self.redis = aioredis.Redis(host="localhost", port=6379, decode_responses=True)
 
         self.success_map = self._read_json(self.success_json)

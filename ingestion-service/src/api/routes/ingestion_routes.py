@@ -7,6 +7,7 @@ from models.local_models import IngestionRequest, QueryRequest
 def register_ingestion_routes(app: FastAPI, logger):
     @app.get("/health")
     async def health():
+        # TODO add code that actually runs tests on the dependency subsystems.
         return {"status": "ok"}
 
     @app.post("/ingest")
@@ -14,7 +15,7 @@ def register_ingestion_routes(app: FastAPI, logger):
         try:
             logger.info(f"Received ingestion request for: {request.filename}")
             background_tasks.add_task(app.state.ingest_service.ingest_document, request)
-            return {"status": "accepted", "message": "Document ingestion started in background"}
+            return {"status": "accepted", "message": "Document {request.filename} ingestion started in background"}
 
         except ValidationError as ve:
             logger.warning(f"Validation error during ingestion: {ve}")

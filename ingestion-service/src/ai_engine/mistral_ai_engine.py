@@ -60,6 +60,8 @@ class MistralAIEngine(AIEngine):
         try:
             output = await asyncio.to_thread(self.llm, prompt, max_new_tokens=128, do_sample=False)
             answer = output[0]["generated_text"].split("Answer:")[-1].strip()
+            # Why am I assigning a default score of 1.0 here???
+            # TODO find a way to calculate this score.
             return {"answer": answer, "score": 1.0}
         except Exception as e:
             logger.error(f"QA failed: {e}")
