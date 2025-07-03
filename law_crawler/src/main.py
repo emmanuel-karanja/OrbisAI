@@ -16,10 +16,10 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
-    config = get_config()  # ✅ No args here
+    config = get_config()  # No args here
 
     crawler = KenyaLawWebCrawler(
-        start_url=config["start_url"],       # ✅ Lowercase keys
+        start_url=config["start_url"],       # Lowercase keys
         max_depth=config["max_depth"],
         download_root=config["download_root"],
         max_workers=config["max_workers"],

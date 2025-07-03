@@ -69,7 +69,7 @@ class KenyaLawWebCrawler:
 
         try:
             for i in range(self.max_workers):
-                thread = threading.Thread(target=self.crawl_worker, name=f"Worker-{i+1}")
+                thread = threading.Thread(target=self.crawl_worker, name=f"KenyaLawCrawlerWorker-{i+1}")
                 thread.start()
                 threads.append(thread)
 
@@ -85,7 +85,7 @@ class KenyaLawWebCrawler:
             self.save_index()
             self.logger.info("🧹 Cleanup complete. Exiting.")
 
-    #DFS
+    #DFS crawl
     def crawl_worker(self):
         while not self.shutdown_event.is_set():
             with self.visited_lock:
@@ -173,7 +173,7 @@ class KenyaLawWebCrawler:
             for a in soup.find_all("a", href=True):
                 href = a["href"]
                 full_url = urljoin(url, href)
-
+            # Perhaps add some logic to check if the name contains Act or something.
                 if full_url.lower().endswith(".pdf"):
                     self.download_document(full_url, self.pdf_dir, "pdf")
                 elif full_url.lower().endswith(".docx"):
